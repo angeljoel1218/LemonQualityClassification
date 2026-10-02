@@ -1,0 +1,17 @@
+# Configuración del experimento E2: clasificador directo (baseline, multi-view CNN)
+experimento: E2_baseline
+semillas: [0, 1, 2]
+modelo:
+  tipo: multi_view_cnn
+  backbone: resnet18
+  pooling: max            # max | mean
+  preentrenado: true
+entrenamiento:
+  epocas: 50
+  batch_size: 16
+  lr: 0.0001
+  optimizador: adam
+datos:
+  particion: "70-15-15"
+  agrupamiento: ["fruto", "lote", "fecha"]
+  excluir_como_feature: ["lote", "fecha"]

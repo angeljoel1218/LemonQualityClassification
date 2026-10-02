@@ -1,0 +1,18 @@
+# Datos (no se versionan, solo el codigo que los genera)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Logs y checkpoints de entrenamiento
+logs/*
+!logs/.gitkeep
+
+# Entorno
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store

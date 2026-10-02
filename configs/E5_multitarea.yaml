@@ -1,0 +1,27 @@
+# Configuración del experimento E5: pipeline multitarea propuesto
+experimento: E5_multitarea
+semillas: [0, 1, 2]
+modelo:
+  backbone: resnet50
+  preentrenado: true
+  segmentacion: mask_rcnn   # mask_rcnn | yolov8_seg (definir en el piloto)
+  pesos_perdida:
+    w_seg: 1.0
+    w_calibre: 1.0
+    w_color: 1.0
+    # ajustar por incertidumbre (Kendall et al., 2018) tras el piloto
+regla_comercial:
+  theta_def: null   # definir en el piloto con el panel de agronomos
+  theta_col: null   # definir en el piloto con el panel de agronomos
+  calibre_extra_mm: 39.0
+  calibre_primera_mm: 37.0
+  calibre_segunda_mm: 35.0
+entrenamiento:
+  epocas: 50
+  batch_size: 8
+  lr: 0.0001
+  optimizador: adam
+datos:
+  particion: "70-15-15"
+  agrupamiento: ["fruto", "lote", "fecha"]
+  excluir_como_feature: ["lote", "fecha"]
