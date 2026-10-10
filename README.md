@@ -80,8 +80,8 @@ etiquetas.csv   # id_fruto, lote, fecha, calibre_mm_ref, categoria_ref  [+ color
 ```
 **Ejecutar:**
 ```bash
-python src/ingesta.py                      # genera data/processed/indice_*.csv
-jupyter notebook notebooks/EDA_basico.ipynb   # con MODO_DEMO = False
+python src/ingesta.py
+jupyter notebook notebooks/EDA_basico.ipynb
 ```
 **Probar sin datos reales** (imágenes sintéticas, solo valida el pipeline):
 ```bash
