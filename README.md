@@ -118,7 +118,7 @@ riesgo de atajos (lote/fecha/brillo) y una vista previa de la partición 70/15/1
    ```bash
    python src/modelo_multitarea.py --config configs/E5_multitarea.yaml
    ```
-   Entrena en GPU (Google Colab Pro / AWS). Genera checkpoints por semilla en `logs/`.
+   Genera checkpoints por semilla en `logs/`.
 
 6. **Inferencia sobre un fruto nuevo** (una vez entrenado el modelo)
    ```bash
