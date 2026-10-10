@@ -1,5 +1,5 @@
 # Datos (no se versionan, solo el codigo que los genera)
-data/raw/*
+data/raw/imagenes/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
