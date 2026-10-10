@@ -68,6 +68,7 @@ class MultiViewCNNBaseline(nn.Module):
 
 
 if __name__ == "__main__":
+    # Prueba rapida de forma, sin datos reales.
     modelo = MultiViewCNNBaseline()
     entrada_dummy = torch.randn(2, N_VISTAS, 3, 224, 224)  # 2 frutos de ejemplo
     salida = modelo(entrada_dummy)

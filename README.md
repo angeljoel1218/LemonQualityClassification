@@ -1,4 +1,4 @@
-# Clasificación Comercial Post-Cosecha de Limón con Visión por Computadora
+# 🍋 Clasificación Comercial Post-Cosecha de Limón con Visión por Computadora
 
 Proyecto de investigación (Maestría en IA – UNI) para entrenar un sistema de visión por
 computadora basado en Deep Learning que clasifique limones en las categorías comerciales
@@ -9,15 +9,15 @@ Este repositorio forma parte del curso **Proyecto de Investigación II (MIA 403)
 
 ---
 
-## Autores
-- Angel Joel Alvarado Crisanto – [@angeljoel1218](https://github.com/angeljoel1218)
+## 👥 Autores
+- Angel Joel Alvarado Crisanto – [@usuario-github](https://github.com/usuario-github)
 - Javier Fernandez Purizaca – [@usuario-github](https://github.com/usuario-github)
 
-**Asesor(a):** Ph.D. Glen Dario Rodriguez Rafael
+**Asesor(a):** Mtr. Ing. Maria Fernanda Tejada Begazo
 
 ---
 
-## Dataset
+## 📊 Dataset
 - **Fuente**: captura propia en centros de acopio de post-cosecha de limón sutil,
   distrito de Olmos (Lambayeque).
 - **Unidad de análisis**: el fruto individual (5 imágenes agrupadas por ID de fruto).
@@ -29,16 +29,17 @@ Este repositorio forma parte del curso **Proyecto de Investigación II (MIA 403)
 
 ---
 
-## Estructura del repositorio
+## 🗂️ Estructura del repositorio
 ```
 data/
  ├── raw/              # imágenes originales por sesión (5 vistas x fruto, sin tocar)
  ├── processed/        # imágenes corregidas (balance de blancos, color, máscaras)
 notebooks/
- ├── EDA_basico.ipynb          # análisis exploratorio (distribución por categoría, calibre, color)
+ ├── EDA_basico.ipynb          # EDA: calidad de datos, balance, calibre, imágenes, atajos, partición
  └── Baseline_basico.ipynb     # entrenamiento del clasificador directo (baseline)
 src/
- ├── ingesta.py                # carga y agrupación de las 5 vistas por ID de fruto
+ ├── ingesta.py                # indexa imágenes + etiquetas → data/processed/indice_*.csv
+ ├── eda.py                    # funciones reutilizables del EDA
  ├── preprocesamiento.py       # corrección de distorsión, balance de blancos, normalización
  ├── segmentacion.py           # segmentación de instancias (Mask R-CNN / YOLOv8-seg)
  ├── atributos.py              # calibre (mm), color/madurez (CIELAB), severidad de defecto
@@ -46,6 +47,7 @@ src/
  ├── modelo_baseline.py        # clasificador directo end-to-end (CNN multi-vista)
  ├── modelo_multitarea.py      # backbone compartido + cabezales (segmentación/calibre/color)
  └── api_inferencia.py         # servicio que ejecuta el pipeline completo sobre un fruto nuevo
+scripts/                       # generar_datos_demo.py (dataset sintético para probar el pipeline)
 configs/                       # un YAML por experimento de ablación (E1–E6), con seeds y umbrales
 logs/                          # métricas por época, resultados de pruebas estadísticas
 slides/                        # presentaciones de avance
@@ -57,7 +59,7 @@ requirements.txt
 
 ---
 
-## Requisitos
+## ⚙️ Requisitos
 Instalar dependencias con `pip`:
 ```bash
 pip install -r requirements.txt
@@ -69,9 +71,32 @@ poetry install
 
 ---
 
-## Cómo ejecutar el pipeline
+## 🔎 EDA (Análisis exploratorio)
 
-1. **Ingesta de datos** (agrupa las 5 vistas por fruto)
+**Formato de datos esperado** (`data/raw/`):
+```
+imagenes/<lote>_<fecha>_<id_fruto>_<vista>.jpg    # vista: 0 | 90 | 180 | 270 | pedunculo
+etiquetas.csv   # id_fruto, lote, fecha, calibre_mm_ref, categoria_ref  [+ color_panel, severidad_defecto_panel]
+```
+**Ejecutar:**
+```bash
+python src/ingesta.py                      # genera data/processed/indice_*.csv
+jupyter notebook notebooks/EDA_basico.ipynb   # con MODO_DEMO = False
+```
+**Probar sin datos reales** (imágenes sintéticas, solo valida el pipeline):
+```bash
+python scripts/generar_datos_demo.py
+python src/ingesta.py --raw data/demo/raw --salida data/demo/processed
+```
+El notebook revisa: calidad de etiquetas, capturas incompletas, balance vs. cuotas, cobertura de lotes/fechas,
+consistencia calibre–categoría, frutos fronterizos, calidad de imagen (nitidez, exposición, duplicados),
+riesgo de atajos (lote/fecha/brillo) y una vista previa de la partición 70/15/15.
+
+---
+
+## 🚀 Cómo ejecutar el pipeline
+
+1. **Ingesta de datos** (indexa las 5 vistas por fruto y las etiquetas)
    ```bash
    python src/ingesta.py
    ```
@@ -103,7 +128,7 @@ poetry install
 
 ---
 
-## Resultados esperados
+## 📈 Resultados esperados
 - **EDA inicial** en `notebooks/EDA_basico.ipynb`.
 - **Baseline (clasificador directo)** → métricas en `logs/metrics_baseline.txt`.
 - **Pipeline multitarea propuesto** → métricas en `logs/metrics_multitarea.txt`.
@@ -113,12 +138,12 @@ poetry install
 
 ---
 
-## Roadmap
+## 📌 Roadmap
 - [x] Semana 2 → Diseño del flujo reproducible (diagrama, partición, riesgos).
 - [ ] Semana 3 → Ingesta + preprocesamiento + EDA + baseline.
 - [ ] Semana 4 → Segmentación + atributos + regla comercial + comparación con baseline.
 
 ---
 
-## Licencia
+## 📜 Licencia
 Uso académico – Universidad Nacional de Ingeniería (UNI).
