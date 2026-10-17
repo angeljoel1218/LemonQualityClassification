@@ -29,7 +29,10 @@ def dibujar(calibre_mm, color, defecto, brillo, rng, vista):
     img = np.full((480, 640, 3), 215, np.uint8)
     img = np.clip(img.astype(float) * brillo, 0, 255).astype(np.uint8)
     d = calibre_mm * PX_POR_MM * (1 + rng.normal(0, .02))
-    ejes = (int(d / 2), int(d / 2 * (0.82 if vista != "pedunculo" else 0.95)))
+    if vista == "pedunculo":      # vista polar: casi circular, diámetro = calibre
+        ejes = (int(d / 2), int(d / 2 * 0.97))
+    else:                         # vista ecuatorial: eje mayor (polar) > eje menor (= calibre)
+        ejes = (int(d / 2 / 0.82), int(d / 2))
     bgr = {"verde": (60, 170, 90), "verde_amarillo": (60, 200, 170), "amarillo": (40, 220, 235)}[color]
     cv2.ellipse(img, (320, 240), ejes, int(rng.integers(0, 30)), 0, 360, bgr, -1)
     if defecto > 0:
@@ -68,6 +71,10 @@ def main(salida: Path, n: int, semilla: int):
         et.loc[i, "calibre_mm_ref"] = 33.0
     et = et.sample(frac=1, random_state=semilla).reset_index(drop=True)
     et.to_csv(salida / "etiquetas.csv", index=False)
+    # Calibración px->mm por sesión (lote, fecha), con un pequeño error de calibración (~1 %)
+    calib = pd.DataFrame([(l, f, round((1 / PX_POR_MM) * (1 + rng.normal(0, .01)), 5))
+                          for l in lotes for f in fechas], columns=["lote", "fecha", "mm_por_px"])
+    calib.to_csv(salida / "calibracion_sesiones.csv", index=False)
 
     faltantes = set(et.id_fruto.sample(4, random_state=1))
     borrosos = set(et.id_fruto.sample(4, random_state=2))

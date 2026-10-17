@@ -1,0 +1,36 @@
+# Configuración de Feature Engineering (todo lo que afecta a los resultados está aquí y se registra).
+semillas: [0, 1, 2]
+cv_folds: 5                       # validación cruzada estratificada SOLO sobre train
+modelos: [knn, logreg, rf]
+conjuntos: ["A", "A+B", "A+C", "A+B+C", "A+B+C+S"]   # A=originales B=transformaciones C=dominio S=selección
+positivo: Fabrica                 # clase crítica (F1 / PR-AUC en la clase positiva)
+usar_calidad_como_feature: false  # nitidez/brillo de fondo = riesgo de atajo por sesión
+
+modelo_params:
+  knn_k: 5
+  rf_arboles: 300
+
+transformaciones:                 # B: se ajustan SOLO con train
+  winsor: [5, 95]                 # percentiles de winsorización
+  umbral_asimetria: 1.0           # log1p solo a columnas con asimetría > umbral
+  outlier_k: 1.5                  # regla IQR para banderas de atípicos
+  outlier_tasa_min: 0.01          # solo se crea bandera si >=1 % de atípicos en train
+  colinealidad_umbral: 0.95       # S: |r| desde el cual se elimina una de las dos variables
+
+dominio:                          # C: FIJAR CON EL PANEL EN EL PILOTO (valores de ejemplo)
+  umbrales_calibre_mm: [35.0, 37.0, 39.0]
+  fronterizo_mm: 0.5
+  hue_verde_min: 123.0            # matiz (grados CIELAB) desde el cual se considera "verde"
+  hue_amarillo_max: 103.0         # matiz por debajo del cual se considera "amarillo"
+  theta_def: 0.10                 # severidad desde la cual el defecto es "alto"
+  umbral_vista_defecto: 0.02      # fracción de superficie para contar una vista con defecto
+
+extraccion:                       # parámetros de src/features_imagen.py
+  borde: 12
+  de_min: 8.0
+  min_frac_area: 0.01
+  erosion_frac: 0.04
+  defecto_k: 2.5
+  defecto_de_min: 12.0
+  defecto_min_frac: 0.002
+  claro_tol: 5.0

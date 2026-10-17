@@ -153,16 +153,9 @@ def marcar_atipicas(m: pd.DataFrame, col: str, k: float = 3.0) -> pd.Series:
 
 # ----------------------------------------------------------------- vista previa de partición
 def vista_previa_particion(df: pd.DataFrame, semilla: int = 0) -> pd.DataFrame:
-    """VISTA PREVIA (no definitiva): 70/15/15 por fruto, estratificada por categoría.
-    La partición oficial se genera una sola vez y se congela como artefacto versionado."""
-    rng = np.random.default_rng(semilla)
-    d = df.dropna(subset=["categoria_ref"]).copy()
+    """VISTA PREVIA (no definitiva) de la partición 70/15/15 por fruto, estratificada por categoría y lote.
+    La oficial se genera una sola vez con src/particion.py y queda congelada."""
+    from src.particion import asignar_subconjuntos
+    d = df.merge(asignar_subconjuntos(df, semilla=semilla), on="id_fruto")
     d["cat"] = normalizar_categorias(d["categoria_ref"])
-    d["subset"] = ""
-    for _, idx in d.groupby("cat").groups.items():
-        idx = np.array(list(idx)); rng.shuffle(idx)
-        n = len(idx); n_tr, n_va = int(round(.70 * n)), int(round(.15 * n))
-        d.loc[idx[:n_tr], "subset"] = "train"
-        d.loc[idx[n_tr:n_tr + n_va], "subset"] = "val"
-        d.loc[idx[n_tr + n_va:], "subset"] = "test"
     return d

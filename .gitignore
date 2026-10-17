@@ -1,5 +1,5 @@
 # Datos (no se versionan, solo el codigo que los genera)
-data/raw/imagenes/*
+data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
@@ -16,3 +16,6 @@ __pycache__/
 
 # Sistema
 .DS_Store
+
+# Datos sintéticos de prueba
+data/demo/

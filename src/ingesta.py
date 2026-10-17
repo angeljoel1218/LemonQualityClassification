@@ -33,6 +33,36 @@ VISTAS_ESPERADAS = ["0", "90", "180", "270", "pedunculo"]
 EXTENSIONES = {".jpg", ".jpeg", ".png"}
 
 
+COLS_NUMERICAS = ["calibre_mm_ref", "severidad_defecto_panel"]
+COLS_REQUERIDAS = ["id_fruto", "lote", "fecha", "calibre_mm_ref", "categoria_ref"]
+
+
+def leer_etiquetas(path: Path) -> pd.DataFrame:
+    """Lee etiquetas.csv tolerando lo que hace Excel en configuración regional peruana/española:
+    separador ';' en vez de ',', BOM de UTF-8, decimales con coma y espacios sobrantes."""
+    with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
+        primera = f.readline()
+    sep = ";" if primera.count(";") > primera.count(",") else ","
+    df = pd.read_csv(path, sep=sep, dtype=str, encoding="utf-8-sig", skipinitialspace=True)
+    df.columns = [c.strip().lower() for c in df.columns]
+    df = df.apply(lambda col: col.str.strip() if col.dtype == object else col)
+    df = df.dropna(how="all")
+    df = df[df["id_fruto"].notna()] if "id_fruto" in df.columns else df
+    faltan = [c for c in COLS_REQUERIDAS if c not in df.columns]
+    if faltan:
+        raise SystemExit(f"etiquetas.csv: faltan columnas {faltan}. Columnas leídas: {list(df.columns)} "
+                         f"(separador detectado: '{sep}')")
+    for c in COLS_NUMERICAS:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c].str.replace(",", ".", regex=False), errors="coerce")
+    malas = df[~df["fecha"].fillna("").str.fullmatch(r"\d{8}")]
+    if len(malas):
+        print(f"[AVISO] {len(malas)} filas con `fecha` que no es AAAAMMDD (¿Excel la convirtió?), p. ej.: "
+              f"{malas['fecha'].head(3).tolist()}")
+    print(f"etiquetas.csv leído: {len(df)} filas (separador '{sep}')")
+    return df
+
+
 def indexar_imagenes(imagenes_dir: Path) -> pd.DataFrame:
     """Una fila por imagen, parseando lote/fecha/id_fruto/vista del nombre de archivo."""
     filas, invalidos = [], []
@@ -76,7 +106,7 @@ def main(raw: Path, salida: Path):
 
     salida.mkdir(parents=True, exist_ok=True)
     df_img = indexar_imagenes(imagenes_dir)
-    etiquetas = pd.read_csv(etiquetas_path, dtype={"id_fruto": str, "lote": str, "fecha": str})
+    etiquetas = leer_etiquetas(etiquetas_path)
     df_fr = indexar_frutos(df_img, etiquetas)
 
     df_img.to_csv(salida / "indice_imagenes.csv", index=False)
