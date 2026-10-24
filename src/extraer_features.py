@@ -35,8 +35,7 @@ if str(ROOT) not in sys.path:      # permite `python src/extraer_features.py`
     sys.path.insert(0, str(ROOT))
 
 from src.features_imagen import PARAMS, features_vista  # noqa: E402
-from src.ingesta import leer_etiquetas
-
+from src.ingesta import leer_csv  # noqa: E402
 EQ = {"0", "90", "180", "270"}
 
 
@@ -50,7 +49,7 @@ def cargar_calibracion(raw: Path) -> dict:
     if not ruta.exists():
         print(f"[AVISO] No existe {ruta}: las features en mm quedarán vacías (solo px).")
         return {}
-    c = leer_etiquetas(ruta, numericas=["mm_por_px"])
+    c = leer_csv(ruta, numericas=["mm_por_px"])
     return {(str(r.lote), str(r.fecha)): r.mm_por_px for r in c.itertuples()}
 
 

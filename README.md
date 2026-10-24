@@ -10,7 +10,7 @@ Este repositorio forma parte del curso **Proyecto de Investigación II (MIA 403)
 ---
 
 ## 👥 Autores
-- Angel Joel Alvarado Crisanto – [@usuario-github](https://github.com/usuario-github)
+- Angel Joel Alvarado Crisanto – [@angeljoel1218](https://github.com/angeljoel1218)
 - Javier Fernandez Purizaca – [@usuario-github](https://github.com/usuario-github)
 
 **Asesor(a):** Mtr. Ing. Maria Fernanda Tejada Begazo

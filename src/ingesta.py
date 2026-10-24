@@ -37,35 +37,42 @@ COLS_NUMERICAS = ["calibre_mm_ref", "severidad_defecto_panel"]
 COLS_REQUERIDAS = ["id_fruto", "lote", "fecha", "calibre_mm_ref", "categoria_ref"]
 
 
-def leer_etiquetas(path: Path) -> pd.DataFrame:
-    """Lee etiquetas.csv tolerando lo que hace Excel en configuración regional peruana/española:
+def leer_csv(path: Path, numericas=()) -> pd.DataFrame:
+    """Lee un CSV tolerando lo que hace Excel en configuración regional peruana/española:
     separador ';' en vez de ',', BOM de UTF-8, decimales con coma y espacios sobrantes."""
     with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
         primera = f.readline()
     sep = ";" if primera.count(";") > primera.count(",") else ","
     df = pd.read_csv(path, sep=sep, dtype=str, encoding="utf-8-sig", skipinitialspace=True)
     df.columns = [c.strip().lower() for c in df.columns]
-    df = df.apply(lambda col: col.str.strip() if col.dtype == object else col)
+    df = df.apply(lambda col: col.str.strip() if pd.api.types.is_string_dtype(col) else col)
     df = df.dropna(how="all")
-    df = df[df["id_fruto"].notna()] if "id_fruto" in df.columns else df
+    for c in numericas:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c].str.replace(",", ".", regex=False), errors="coerce")
+    df.attrs["sep"] = sep
+    return df
+
+
+def leer_etiquetas(path: Path) -> pd.DataFrame:
+    df = leer_csv(path, numericas=COLS_NUMERICAS)
     faltan = [c for c in COLS_REQUERIDAS if c not in df.columns]
     if faltan:
         raise SystemExit(f"etiquetas.csv: faltan columnas {faltan}. Columnas leídas: {list(df.columns)} "
-                         f"(separador detectado: '{sep}')")
-    for c in COLS_NUMERICAS:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c].str.replace(",", ".", regex=False), errors="coerce")
+                         f"(separador detectado: '{df.attrs['sep']}')")
+    df = df[df["id_fruto"].notna()]
     malas = df[~df["fecha"].fillna("").str.fullmatch(r"\d{8}")]
     if len(malas):
         print(f"[AVISO] {len(malas)} filas con `fecha` que no es AAAAMMDD (¿Excel la convirtió?), p. ej.: "
               f"{malas['fecha'].head(3).tolist()}")
-    print(f"etiquetas.csv leído: {len(df)} filas (separador '{sep}')")
+    print(f"etiquetas.csv leído: {len(df)} filas (separador '{df.attrs['sep']}')")
     return df
 
 
 def indexar_imagenes(imagenes_dir: Path) -> pd.DataFrame:
     """Una fila por imagen, parseando lote/fecha/id_fruto/vista del nombre de archivo."""
     filas, invalidos = [], []
+    imagenes_dir = Path(imagenes_dir).resolve()
     for ruta in sorted(imagenes_dir.glob("*")):
         if ruta.suffix.lower() not in EXTENSIONES:
             continue
