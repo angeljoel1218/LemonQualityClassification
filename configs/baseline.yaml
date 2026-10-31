@@ -1,0 +1,16 @@
+# Baseline + variantes de DATOS. Misma partición congelada y mismas semillas que Feature Engineering.
+semillas: [0, 1, 2]
+cv_folds: 5                       # validación cruzada estratificada SOLO sobre train
+positivo: Fabrica                 # clase crítica (F1 / recall / PR-AUC de la clase positiva)
+metrica_central: f1_macro         # sobre ella se comparan baseline y variantes (f1_pos se reporta a la par)
+modelos: [dummy, knn, gnb]        # baseline: referencia (mayoritaria), kNN (k=5) y Naive Bayes
+knn_k: 5
+conjunto_features: A              # el baseline usa solo las variables originales (sin B ni C)
+
+variantes:
+  vistas:                         # V1: cuántas de las 5 imágenes por fruto se usan
+    "1vista": ["0"]
+    "2vistas": ["0", "180"]
+    "4ecuatoriales": ["0", "90", "180", "270"]      # sin pedúnculo
+  remuestreo: ["sobre", "sub"]    # V2: balanceo de clases en train
+alfa: 0.05                        # umbral tras la corrección de Holm

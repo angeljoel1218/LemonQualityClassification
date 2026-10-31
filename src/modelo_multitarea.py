@@ -14,7 +14,7 @@ la decide la regla comercial (regla_comercial.py), no una capa aprendida.
 Cada cabezal corre POR VISTA (una de las 5 imagenes del fruto). La fusion de las 5
 vistas en "un solo fruto" ocurre DESPUES de los cabezales, por agregacion estadistica
 (atributos.py: mediana de calibre, media de color, maximo de severidad), no por
-fusion de features como en el baseline (modelo_baseline.py). Esta es la diferencia
+fusion de features como en el baseline (modelo_mvcnn.py). Esta es la diferencia
 clave que se evalua en la ablacion E2 vs E5 (hipotesis H6: aporta mas descomponer
 por atributos que clasificar de punta a punta).
 

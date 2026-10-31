@@ -18,11 +18,13 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import MissingIndicator, SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, TargetEncoder
 
 from src.fe_columnas import verificar_sin_fuga
+from src.remuestreo import ConRemuestreo
 from src.transformadores import (CiclicoGrados, FiltroColinealidad, Log1pAsimetricas,
                                  MarcasOutlier, Winsorizador)
 
@@ -36,6 +38,8 @@ def crear_modelo(nombre: str, semilla: int, mp: dict):
         return DummyClassifier(strategy="most_frequent")
     if nombre == "knn":
         return KNeighborsClassifier(n_neighbors=mp.get("knn_k", 5))
+    if nombre == "gnb":
+        return GaussianNB()
     if nombre == "logreg":
         return LogisticRegression(max_iter=3000, class_weight="balanced", random_state=semilla)
     if nombre == "rf":
@@ -45,11 +49,13 @@ def crear_modelo(nombre: str, semilla: int, mp: dict):
 
 
 def construir_pipeline(cols, conjuntos: str, modelo: str, semilla: int, cfg: dict,
-                       escalar: bool = True, control_fuga: str | None = None) -> Pipeline:
+                       escalar: bool = True, control_fuga: str | None = None,
+                       remuestreo: str | None = None) -> Pipeline:
     """
     cols       columnas numéricas de entrada (ya verificadas contra fuga)
     conjuntos  p. ej. 'A', 'A+B', 'A+C', 'A+B+C', 'A+B+C+S'
     control_fuga  None | 'onehot_lote' | 'te_lote'  -> SOLO para el experimento de control de fuga
+    remuestreo    None | 'sobre' | 'sub'  -> variante de datos: balanceo SOLO del train (dentro de fit)
     """
     letras = set(conjuntos.split("+"))
     tr = cfg["transformaciones"]
@@ -83,5 +89,8 @@ def construir_pipeline(cols, conjuntos: str, modelo: str, semilla: int, cfg: dic
     etapas = [("fe", ct)]
     if "S" in letras:
         etapas.append(("sel", FiltroColinealidad(tr["colinealidad_umbral"], semilla)))
-    etapas.append(("clf", crear_modelo(modelo, semilla, cfg.get("modelo_params", {}))))
+    clf = crear_modelo(modelo, semilla, cfg.get("modelo_params", {}))
+    if remuestreo:
+        clf = ConRemuestreo(clf, modo=remuestreo, semilla=semilla)
+    etapas.append(("clf", clf))
     return Pipeline(etapas)

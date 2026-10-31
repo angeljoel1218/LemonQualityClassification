@@ -202,7 +202,7 @@ def ejecutar(procesados: Path, cfg: dict | None = None, control_fuga: bool = Fal
     n_splits = int(min(cfg["cv_folds"], cuenta.min()))
     cols_firma = columnas_para({"A", "C"})
     _, huella_firma = firma_por_subconjunto(df, cols_firma)
-    huella_part = huella_particion(df[["id_fruto", "subset"]])
+    huella_part = huella_particion(cargar_particion(procesados))
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     if verbose:
         print(f"Frutos train/val/test: {len(tr)}/{len(va)}/{len(te)} | CV: {n_splits} pliegues x {len(cfg['semillas'])} semillas")

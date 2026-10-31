@@ -19,3 +19,6 @@ __pycache__/
 
 # Datos sintéticos de prueba
 data/demo/
+
+# Informe de datos sintéticos
+informe_demo/

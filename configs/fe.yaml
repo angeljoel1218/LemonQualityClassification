@@ -34,3 +34,10 @@ extraccion:                       # parámetros de src/features_imagen.py
   defecto_de_min: 12.0
   defecto_min_frac: 0.002
   claro_tol: 5.0
+
+importancia:                      # src/importancia.py (se calcula SOLO con train, fuera de muestra)
+  modelos: [rf, logreg]           # importancia por permutación con cada modelo (si coinciden, es robusta)
+  conjunto: A+C                   # variables sobre las que se calcula
+  n_repeats: 5                    # repeticiones de cada permutación en cada pliegue
+  top_k: 10                       # para el % de pliegues en que una variable está entre las k mejores
+  ruido_control: true             # añade una columna aleatoria como regla de comparación

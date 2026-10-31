@@ -42,6 +42,28 @@ COLS_C = [
     "defecto_alto_flag", "frac_vistas_defecto",
 ]
 
+# ------------------------------------------------- Dimensiones agronomicas (para la importancia agrupada)
+# Conectan cada variable con lo que decide la regla comercial: CALIBRE -> Extra/Primera/Segunda/Tercera;
+# DEFECTO y COLOR -> Fabrica. "Forma" y "Textura" son apoyo.
+DIMENSIONES = {
+    "Calibre": ["diam_ecu_px", "diam_ecu_mm", "long_polar_px", "long_polar_mm", "area_px", "ped_diam_px",
+                "cat_calibre_ord", "dist_umbral_calibre_mm", "es_fronterizo"],
+    "Forma": ["aspecto", "circularidad", "solidez", "excentricidad", "asimetria_cv_diam",
+              "ped_circularidad", "ped_area_ratio"],
+    "Color": ["L_media", "a_media", "b_media", "L_std", "a_std", "b_std", "L_p10", "L_p90", "entropia_L",
+              "disp_b_vistas", "croma", "hue_deg", "indice_amarillez", "razon_a_b", "color_clase_ord"],
+    "Defecto": ["defecto_max", "defecto_media", "n_vistas_defecto", "mancha_max", "n_manchas_total",
+                "defecto_alto_flag", "frac_vistas_defecto"],
+    "Textura": ["lap_var", "grad_media"],
+}
+DIMENSION_DE = {c: d for d, cols in DIMENSIONES.items() for c in cols}
+
+
+def dimension_de(col: str) -> str:
+    """Dimension agronomica de una variable ('Control' para la columna de ruido de control)."""
+    return "Control (ruido)" if col == "ruido_control" else DIMENSION_DE.get(col, "Otra")
+
+
 # ------------------------------------------------- Metadatos de calidad (NO son features por defecto)
 COLS_META = ["n_vistas_validas", "frac_seg_ok", "nitidez", "brillo_fondo", "t_extraccion_ms"]
 

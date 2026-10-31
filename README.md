@@ -10,7 +10,7 @@ Este repositorio forma parte del curso **Proyecto de Investigación II (MIA 403)
 ---
 
 ## 👥 Autores
-- Angel Joel Alvarado Crisanto – [@angeljoel1218](https://github.com/angeljoel1218)
+- Angel Joel Alvarado Crisanto – [@usuario-github](https://github.com/usuario-github)
 - Javier Fernandez Purizaca – [@usuario-github](https://github.com/usuario-github)
 
 **Asesor(a):** Mtr. Ing. Maria Fernanda Tejada Begazo
@@ -58,7 +58,8 @@ data/
 notebooks/
  ├── EDA_basico.ipynb              # EDA: calidad de datos, balance, calibre, imágenes, atajos
  ├── Feature_Engineering.ipynb     # FE: extracción, partición, selección, ablaciones, control de fuga
- └── Baseline_basico.ipynb         # baseline de aprendizaje profundo
+ ├── Importancia_Variables.ipynb   # importancia por variable y por dimensión, consenso entre métodos
+ └── Baseline_basico.ipynb         # baseline clásico + variantes de datos + informe
 src/
  ├── ingesta.py                # indexa imágenes + etiquetas
  ├── particion.py              # partición train/val/test congelada (por fruto)
@@ -69,18 +70,24 @@ src/
  ├── transformadores.py        # winsorizador, log1p, banderas, cíclico, filtro de colinealidad
  ├── fe_pipeline.py            # construcción de Pipelines sin fuga
  ├── seleccion.py              # MI, ANOVA, correlación, VIF, permutación
+ ├── importancia.py            # importancia de variables (permutación OOF, por dimensión, impureza, MI, control de ruido)
  ├── firma.py                  # firma de datos y deriva
  ├── fe_experimentos.py        # ablaciones, registro, TEST protegido
  ├── preprocesamiento.py       # (esqueleto) corrección de color/escala
  ├── segmentacion.py · atributos.py · regla_comercial.py
- ├── modelo_baseline.py        # MVCNN (baseline)
+ ├── remuestreo.py             # variante de datos: balanceo solo en train
+ ├── modelo_baseline.py        # BASELINE clásico (dummy/kNN/NB) + variantes de datos (vistas, balanceo)
+ ├── informe.py                # genera el informe Word/Markdown con las cifras reales
+ ├── matriz_consistencia.py    # genera la matriz de consistencia (Word + Markdown) desde docs/matriz_consistencia.yaml
+ ├── modelo_mvcnn.py           # arquitectura MVCNN (baseline profundo; pendiente de entrenar)
  ├── modelo_multitarea.py      # backbone compartido + cabezales
  └── api_inferencia.py
 tests/                         # pruebas anti-fuga y de extracción (pytest)
 scripts/                       # generar_datos_demo.py (dataset sintético para probar el pipeline)
-configs/                       # fe.yaml (Feature Engineering) y YAML por experimento (E2, E5)
+configs/                       # fe.yaml, baseline.yaml y YAML de los experimentos profundos (E2_mvcnn, E5)
 docs/                          # diccionario_datos.md, feature_engineering.md, plantillas
 logs/                          # métricas, corridas de FE, test_evaluado.json
+informe/                       # informe generado (Word + Markdown + figuras)
 slides/
 README.md · pyproject.toml · requirements.txt · .gitignore
 ```
@@ -141,52 +148,46 @@ Resultados: `logs/fe_runs/<corrida>/tabla_final.md` (media ± desviación), `log
 
 ## 🚀 Cómo ejecutar el pipeline
 
-1. **Ingesta de datos** (indexa las 5 vistas por fruto y las etiquetas)
-   ```bash
-   python src/ingesta.py
-   ```
+| # | Paso | Comando | Estado |
+|---|---|---|---|
+| 1 | Ingesta (índices de imágenes y etiquetas) | `python src/ingesta.py` | ✅ |
+| 2 | EDA | `notebooks/EDA_basico.ipynb` | ✅ |
+| 3 | Partición congelada (una sola vez) | `python src/particion.py` | ✅ |
+| 4 | Features desde las imágenes | `python src/extraer_features.py` | ✅ |
+| 5 | Feature Engineering (ablaciones) | `python src/fe_experimentos.py` · `notebooks/Feature_Engineering.ipynb` | ✅ |
+| 5b | **Importancia de variables** | `python src/importancia.py` · `notebooks/Importancia_Variables.ipynb` | ✅ |
+| 6 | **Baseline + variantes de datos** | `python src/modelo_baseline.py` · `notebooks/Baseline_basico.ipynb` | ✅ |
+| 7 | **Informe** (EDA + FE + importancia + baseline + variantes) | `python src/informe.py` | ✅ |
+| 7b | **Matriz de consistencia** | `python src/matriz_consistencia.py` (edita `docs/matriz_consistencia.yaml`) | ✅ |
+| 8 | Corrección de color y escala por sesión | `src/preprocesamiento.py` | 🚧 esqueleto |
+| 9 | MVCNN y pipeline multitarea (GPU) | `src/modelo_mvcnn.py`, `src/modelo_multitarea.py` | 🚧 arquitectura definida, sin entrenamiento |
+| 10 | Inferencia sobre un fruto nuevo | `src/api_inferencia.py` | 🚧 esqueleto |
 
-2. **Preprocesamiento** (corrección de color/distorsión con la carta de color y el patrón de escala)
-   ```bash
-   python src/preprocesamiento.py
-   ```
+Pruebas automáticas (anti-fuga, extracción, baseline y estadística): `python -m pytest -q`.
 
-3. **Exploración inicial**
-   - Abrir y ejecutar `notebooks/EDA_basico.ipynb`.
-
-4. **Entrenamiento del baseline** (clasificador directo end-to-end)
-   ```bash
-   python src/modelo_baseline.py --config configs/E2_baseline.yaml
-   ```
-
-5. **Entrenamiento del pipeline multitarea propuesto**
-   ```bash
-   python src/modelo_multitarea.py --config configs/E5_multitarea.yaml
-   ```
-   Entrena en GPU (Google Colab Pro / AWS). Genera checkpoints por semilla en `logs/`.
-
-6. **Inferencia sobre un fruto nuevo** (una vez entrenado el modelo)
-   ```bash
-   python src/api_inferencia.py --fruto_id <id>
-   ```
-   Ejecuta segmentación → atributos → regla comercial, y devuelve la categoría final.
+**Baseline y variantes de datos.** El baseline (dummy, kNN k=5 y Naive Bayes sobre las variables originales) fija la referencia mínima.
+Las variantes cambian el **dato**, no el modelo: **V1** número de imágenes por fruto (1, 2, 4 ecuatoriales y 5) y **V2** balanceo de clases en train
+(sobremuestreo y submuestreo). Misma partición y mismos pliegues → comparaciones pareadas con prueba t corregida y corrección de Holm.
+Detalle: [`docs/baseline_variantes.md`](docs/baseline_variantes.md). Resultados: `logs/metrics_baseline.txt` y `logs/baseline_runs/<corrida>/`.
 
 ---
 
 ## 📈 Resultados esperados
-- **EDA inicial** en `notebooks/EDA_basico.ipynb`.
-- **Baseline (clasificador directo)** → métricas en `logs/metrics_baseline.txt`.
-- **Pipeline multitarea propuesto** → métricas en `logs/metrics_multitarea.txt`.
-- **Métrica central**: F1 macro frente al estándar experto, complementada con kappa y
-  recall de la clase Fábrica.
-- **Comparación baseline vs. propuesto**: McNemar / bootstrap pareado (ablación E2 vs. E5).
+- **EDA** → `notebooks/EDA_basico.ipynb`.
+- **Feature Engineering** → `logs/fe_runs/<corrida>/tabla_final.md`.
+- **Baseline y variantes de datos** → `logs/metrics_baseline.txt`.
+- **Importancia de variables** → `logs/importancia_runs/<corrida>/` (ver [`docs/importancia_variables.md`](docs/importancia_variables.md)).
+- **Informe** → `informe/Informe_EDA_FE_Baseline.docx` (y `.md`).
+- **Matriz de consistencia** → `informe/Matriz_de_Consistencia.docx` y `docs/matriz_consistencia.md`.
+- **Métrica central**: F1 macro (más F1, recall y PR-AUC de la clase Fábrica).
+- **Más adelante**: MVCNN y multitarea → `logs/metrics_multitarea.txt`; comparación final con McNemar / bootstrap pareado sobre TEST.
 
 ---
 
 ## 📌 Roadmap
 - [x] Semana 2 → Diseño del flujo reproducible (diagrama, partición, riesgos).
-- [ ] Semana 3 → Ingesta + preprocesamiento + EDA + baseline.
-- [ ] Semana 4 → Segmentación + atributos + regla comercial + comparación con baseline.
+- [x] Semana 3 → Ingesta + EDA + Feature Engineering + baseline + variantes de datos + informe.
+- [ ] Semana 4 → Corrección de color/escala, segmentación, atributos, regla comercial y MVCNN.
 
 ---
 
