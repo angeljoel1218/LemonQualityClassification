@@ -6,10 +6,10 @@ modelo:
   preentrenado: true
   segmentacion: mask_rcnn   # mask_rcnn | yolov8_seg (definir en el piloto)
   pesos_perdida:
-    w_seg: 1.0
-    w_calibre: 1.0
-    w_color: 1.0
-    # ajustar por incertidumbre (Kendall et al., 2018) tras el piloto
+    lambda_seg: 1.0       # ecuacion (3) de la tesis: L = lambda_seg*L_seg + lambda_col*L_col + lambda_reg*L_reg
+    lambda_col: 1.0
+    lambda_reg: 1.0       # cabezal de regresion del calibre
+    # ajustar con validacion o por incertidumbre (Kendall et al., 2018) tras el piloto
 regla_comercial:
   theta_def: null   # definir en el piloto con el panel de agronomos
   theta_col: null   # definir en el piloto con el panel de agronomos
@@ -20,7 +20,11 @@ entrenamiento:
   epocas: 50
   batch_size: 8
   lr: 0.0001
-  optimizador: adam
+  optimizador: adamw          # plan de tesis 4.6.1 (A.3)
+  scheduler: cosine           # decaimiento de la tasa de aprendizaje por coseno
+  weight_decay: 0.01
+  early_stopping: {monitor: val_loss, paciencia: 5}
+  # busqueda de hiperparametros: configs/hiperparametros.yaml (espacio_profundo)
 datos:
   particion: "70-15-15"
   agrupamiento: ["fruto", "lote", "fecha"]

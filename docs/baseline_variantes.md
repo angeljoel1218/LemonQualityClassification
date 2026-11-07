@@ -33,6 +33,13 @@ Se cambia **el dato**, no el modelo, y una sola cosa por vez.
 - Variante vs baseline del mismo modelo: diferencias pareadas por pliegue → **prueba t corregida para CV repetida** (Nadeau & Bengio, 2003) → **corrección de Holm** por métrica. Veredicto: `mejora` / `empeora` solo si p ajustado < 0,05; si no, `sin evidencia`.
 - Limitación: pliegues y semillas no son independientes, así que la prueba es aproximada. Con decenas de frutos, diferencias de 0,05–0,10 en F1 son ruido. Para la comparación final entre sistemas usar McNemar o bootstrap pareado sobre TEST.
 
+## 3b. Métricas y evidencias añadidas (alineadas con el Plan de tesis)
+- **kappa de Cohen** y **F1 por clase** (Tercera y Fábrica, H5) en CV y VAL; predicciones de VAL guardadas en `predicciones_val.csv` de cada corrida.
+- **Metas de la hipótesis general** con **IC95 % por bootstrap pareado (B = 1000)** sobre VAL: el límite inferior debe cumplir el umbral (`src/estadistica.py`).
+- **H3 / E4:** Fábrica por defecto omitida con 1 vista (0°) frente a 5 vistas, con McNemar (`src/evidencia_hipotesis.py`).
+- **H4 / E1:** línea base sin preprocesamiento (F1 de color/madurez y del par Primera–Segunda).
+- **Control de atajo por sesión:** F1 de un clasificador que solo conoce lote × fecha.
+
 ## 4. Cómo ejecutar
 
 ```bash

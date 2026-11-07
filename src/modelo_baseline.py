@@ -19,6 +19,10 @@ Protocolo (identico a Feature Engineering):
       con correccion de Holm para multiples comparaciones.
     * Se registra configuracion, metricas, costo (ajuste) y latencia (extraccion + prediccion).
 
+Metricas (seccion 4.6.4 de la tesis): F1 macro (central), exactitud balanceada, kappa de Cohen frente a la referencia,
+recall / F1 / PR-AUC de Fabrica y F1 por clase (Tercera y Fabrica: H5). En VALIDACION se guardan ademas las predicciones por
+fruto (`predicciones_val.csv`) para el bootstrap pareado (B = 1000) y la prueba de McNemar de la tesis.
+
 Salidas:  logs/baseline_runs/<corrida>/  y  logs/metrics_baseline.txt  (+ logs/baseline_historial.csv)
 
 Uso:
@@ -39,7 +43,6 @@ import numpy as np
 import pandas as pd
 import sklearn
 import yaml
-from scipy import stats
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
@@ -49,6 +52,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src import fe_experimentos as fx  # noqa: E402
+from src.estadistica import holm, kappa_cohen, t_corregida  # noqa: E402,F401  (re-exportadas: las usan las pruebas)
 from src.extraer_features import agregar_por_fruto, cargar_cfg  # noqa: E402
 from src.fe_columnas import columnas_para  # noqa: E402
 from src.fe_pipeline import construir_pipeline  # noqa: E402
@@ -66,36 +70,34 @@ def cargar_cfg_baseline(ruta: Path = ROOT / "configs" / "baseline.yaml") -> dict
 
 
 # ------------------------------------------------------------------------------------ metricas
-def scorers(pos: str) -> dict:
+def scorers(pos: str, clases=None) -> dict:
+    """Metricas del baseline: las de Feature Engineering + F1 de la clase positiva + kappa de Cohen
+    (+ F1 por clase si se pasa `clases`; Fabrica ya esta en `f1_pos`)."""
     sc = fx.hacer_scorers(pos)
 
     def f1_pos(est, X, y):
         yb = np.asarray(y) == pos
         return f1_score(yb, np.asarray(est.predict(X)) == pos, zero_division=0) if yb.any() else np.nan
 
+    def kappa(est, X, y):
+        return kappa_cohen(y, est.predict(X))
+
+    def f1_de(c):
+        def f(est, X, y):
+            yb = np.asarray(y) == c
+            return f1_score(yb, np.asarray(est.predict(X)) == c, zero_division=0) if yb.any() else np.nan
+        return f
+
     sc["f1_pos"] = f1_pos
+    sc["kappa"] = kappa
+    for c in (clases or []):
+        if c != pos:
+            sc[f"f1_{c}"] = f1_de(c)
     return sc
 
 
 # ------------------------------------------------------------------------------------ estadistica
-def t_corregida(d, n_train: float, n_test: float):
-    """Prueba t corregida para CV repetida (Nadeau & Bengio, 2003). d = diferencias pareadas por pliegue."""
-    d = np.asarray(d, float)
-    J, m = len(d), float(np.mean(d))
-    v = float(np.var(d, ddof=1)) if J > 1 else 0.0
-    if v == 0.0:
-        return (0.0, 1.0) if m == 0 else (float(np.sign(m) * np.inf), 0.0)
-    t = m / np.sqrt((1.0 / J + n_test / n_train) * v)
-    return float(t), float(2 * stats.t.sf(abs(t), J - 1))
-
-
-def holm(p) -> np.ndarray:
-    p = np.asarray(p, float)
-    orden, ajust, corriente = np.argsort(p), np.empty(len(p)), 0.0
-    for rango, i in enumerate(orden):
-        corriente = max(corriente, (len(p) - rango) * p[i])
-        ajust[i] = min(1.0, corriente)
-    return ajust
+# t_corregida y holm viven en src/estadistica.py (se re-exportan arriba para no romper el uso historico).
 
 
 # ------------------------------------------------------------------------------------ datos
@@ -126,7 +128,8 @@ def lista_experimentos(cfg: dict) -> list:
 # ------------------------------------------------------------------------------------ evaluacion
 def evaluar(exp: dict, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict, cfg_pipe: dict, n_splits: int):
     cols = [c for c in columnas_para({"A"}) if tr[c].notna().any()]
-    Xtr, ytr, sc = tr[cols], tr["y"].to_numpy(), scorers(cfg["positivo"])
+    Xtr, ytr = tr[cols], tr["y"].to_numpy()
+    sc = scorers(cfg["positivo"], sorted(set(ytr) | set(va["y"])))
     filas = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
@@ -147,7 +150,8 @@ def evaluar(exp: dict, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict, cfg_pipe: 
         yva = va["y"].to_numpy()
         val = {m: f(pipe, va[cols], yva) for m, f in sc.items()}
         etiquetas = sorted(set(ytr) | set(yva))
-        cm = confusion_matrix(yva, pipe.predict(va[cols]), labels=etiquetas)
+        pred_va = pipe.predict(va[cols])
+        cm = confusion_matrix(yva, pred_va, labels=etiquetas)
     cv = pd.DataFrame(filas)
     fila = dict(config=exp["config"], variante=exp["variante"], familia=exp["familia"], modelo=exp["modelo"],
                 n_features=len(cols), n_train=len(Xtr),
@@ -157,7 +161,7 @@ def evaluar(exp: dict, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict, cfg_pipe: 
     fila.update(fit_s_train=fit_s, cv_fit_s_media=cv["fit_s"].mean(), pred_ms_fruto=cv["pred_ms"].mean(),
                 extraccion_ms_fruto=float(tr["t_extraccion_ms"].mean()))
     fila["latencia_total_ms_fruto"] = fila["pred_ms_fruto"] + fila["extraccion_ms_fruto"]
-    return cv, fila, dict(labels=etiquetas, matriz=cm.tolist())
+    return cv, fila, dict(labels=etiquetas, matriz=cm.tolist(), pred_val=[str(x) for x in pred_va])
 
 
 def comparar(cv_all: pd.DataFrame, res: pd.DataFrame, cfg: dict) -> pd.DataFrame:
@@ -166,7 +170,7 @@ def comparar(cv_all: pd.DataFrame, res: pd.DataFrame, cfg: dict) -> pd.DataFrame
     for _, r in res[res.variante != "BASE"].iterrows():
         a = cv_all[cv_all.config == f"BASE|{r.modelo}"].sort_values(["semilla", "pliegue"])
         b = cv_all[cv_all.config == r.config].sort_values(["semilla", "pliegue"])
-        for m in ("f1_macro", "f1_pos"):
+        for m in [m for m in ("f1_macro", "f1_pos", "kappa", "f1_Tercera") if m in a.columns and m in b.columns]:
             d = b[m].to_numpy() - a[m].to_numpy()
             ok = np.isfinite(d)
             t, p = t_corregida(d[ok], a["n_train_fold"].mean(), a["n_test_fold"].mean())
@@ -191,10 +195,10 @@ def _ms(r, m):
 
 def tabla_baseline_md(res: pd.DataFrame) -> str:
     b = res[res.variante == "BASE"]
-    t = "| Modelo | CV F1 macro | CV F1 Fábrica | CV recall Fábrica | CV PR-AUC Fábrica | VAL F1 macro | VAL F1 Fábrica | ajuste (s) | latencia (ms/fruto) |\n|---|---|---|---|---|---|---|---|---|\n"
+    t = "| Modelo | CV F1 macro | CV kappa | CV F1 Fábrica | CV recall Fábrica | CV PR-AUC Fábrica | VAL F1 macro | VAL kappa | VAL F1 Fábrica | ajuste (s) | latencia (ms/fruto) |\n|---|---|---|---|---|---|---|---|---|---|---|\n"
     for _, r in b.iterrows():
-        t += (f"| {r.modelo} | {_ms(r, 'f1_macro')} | {_ms(r, 'f1_pos')} | {_ms(r, 'recall_pos')} | {_ms(r, 'prauc_pos')} | "
-              f"{r.val_f1_macro:.3f} | {r.val_f1_pos:.3f} | {r.cv_fit_s_media:.2f} | {r.latencia_total_ms_fruto:.0f} |\n")
+        t += (f"| {r.modelo} | {_ms(r, 'f1_macro')} | {_ms(r, 'kappa')} | {_ms(r, 'f1_pos')} | {_ms(r, 'recall_pos')} | {_ms(r, 'prauc_pos')} | "
+              f"{r.val_f1_macro:.3f} | {r.val_kappa:.3f} | {r.val_f1_pos:.3f} | {r.cv_fit_s_media:.2f} | {r.latencia_total_ms_fruto:.0f} |\n")
     return t
 
 
@@ -214,14 +218,23 @@ def tabla_variantes_md(res: pd.DataFrame, comp: pd.DataFrame) -> str:
 def registrar(run_id, cfg, cfg_fe, res, cv_all, comp, cms, huella_part, extra):
     d = LOGS / "baseline_runs" / run_id
     d.mkdir(parents=True, exist_ok=True)
+    extra = dict(extra)
+    ids_val, y_val = extra.pop("ids_val", None), extra.pop("y_val", None)
     meta = dict(run_id=run_id, python=platform.python_version(), sklearn=sklearn.__version__,
                 pandas=pd.__version__, numpy=np.__version__, huella_particion=huella_part,
                 config_hash=hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:12], **extra)
+    extra = dict(extra, ids_val=ids_val, y_val=y_val)
     (d / "config.json").write_text(json.dumps({"meta": meta, "cfg": cfg}, indent=2, ensure_ascii=False), encoding="utf-8")
     res.to_csv(d / "resultados.csv", index=False)
     cv_all.to_csv(d / "cv_pliegues.csv", index=False)
     comp.to_csv(d / "comparaciones.csv", index=False)
-    (d / "matrices_confusion_val.json").write_text(json.dumps(cms, indent=2), encoding="utf-8")
+    cms_json = {k: {kk: vv for kk, vv in v.items() if kk != "pred_val"} for k, v in cms.items()}
+    (d / "matrices_confusion_val.json").write_text(json.dumps(cms_json, indent=2), encoding="utf-8")
+    if extra.get("y_val") is not None:
+        pv = pd.DataFrame({"id_fruto": extra["ids_val"], "y": extra["y_val"]})
+        for k, v in cms.items():
+            pv[k] = v["pred_val"]
+        pv.to_csv(d / "predicciones_val.csv", index=False)
     (d / "tabla_baseline.md").write_text(tabla_baseline_md(res), encoding="utf-8")
     (d / "tabla_variantes.md").write_text(tabla_variantes_md(res, comp), encoding="utf-8")
     hist = LOGS / "baseline_historial.csv"
@@ -271,7 +284,8 @@ def ejecutar(procesados: Path, cfg: dict | None = None, verbose: bool = True):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     huella = huella_particion(fx.cargar_particion(procesados))
     d = registrar(run_id, cfg, cfg_fe, res, cv_all, comp, cms, huella,
-                  dict(n_splits=n_splits, n_train=len(tr), n_val=len(va), n_test=len(te)))
+                  dict(n_splits=n_splits, n_train=len(tr), n_val=len(va), n_test=len(te),
+                       ids_val=va["id_fruto"].tolist(), y_val=va["y"].tolist()))
     if verbose:
         print(f"Registro guardado en {d}\n")
     return res, comp, run_id

@@ -50,6 +50,18 @@ Este repositorio forma parte del curso **Proyecto de Investigación II (MIA 403)
 
 ---
 
+## 🧭 Matriz de consistencia
+
+Problema, objetivos, hipótesis, variables (independientes y dependientes) e indicadores de la tesis, con una fila general y ocho específicas que se corresponden uno a uno (P1–OE1–H1 … P8–OE8–H8, como en el Anexo del Plan de tesis corregido), más la **trazabilidad** de cada hipótesis hacia este repositorio y las **observaciones de consistencia** para revisar con la asesora.
+
+- 📓 **Notebook:** [`notebooks/Matriz_Consistencia.ipynb`](notebooks/Matriz_Consistencia.ipynb): la matriz completa en celdas de texto (visible sin ejecutar) y, al ejecutarlo, la **evidencia actual** de cada indicador con tus datos.
+- 📄 Word (hoja horizontal): [`docs/Matriz_de_Consistencia.docx`](docs/Matriz_de_Consistencia.docx)
+- 📝 Markdown (se ve directo en GitHub): [`docs/matriz_consistencia.md`](docs/matriz_consistencia.md)
+- 📎 También se incluye como **Anexo A** del informe (`informe/Informe_EDA_FE_Baseline.docx`).
+- ✏️ Fuente única: [`docs/matriz_consistencia.yaml`](docs/matriz_consistencia.yaml). Tras editarla: `python src/matriz_consistencia.py` (Word y Markdown) y `python scripts/construir_notebook_matriz.py` (notebook). Una prueba falla si el notebook queda desactualizado. Lo marcado con † es redacción propuesta para completar la matriz.
+
+---
+
 ## 🗂️ Estructura del repositorio
 ```
 data/
@@ -59,6 +71,8 @@ notebooks/
  ├── EDA_basico.ipynb              # EDA: calidad de datos, balance, calibre, imágenes, atajos
  ├── Feature_Engineering.ipynb     # FE: extracción, partición, selección, ablaciones, control de fuga
  ├── Importancia_Variables.ipynb   # importancia por variable y por dimensión, consenso entre métodos
+ ├── Matriz_Consistencia.ipynb     # matriz de consistencia + trazabilidad + evidencia actual de cada indicador
+ ├── Hiperparametros.ipynb         # búsqueda de hiperparámetros (presupuesto fijo), calibración de θ_def/θ_col y espacio del modelo profundo
  └── Baseline_basico.ipynb         # baseline clásico + variantes de datos + informe
 src/
  ├── ingesta.py                # indexa imágenes + etiquetas
@@ -77,14 +91,18 @@ src/
  ├── segmentacion.py · atributos.py · regla_comercial.py
  ├── remuestreo.py             # variante de datos: balanceo solo en train
  ├── modelo_baseline.py        # BASELINE clásico (dummy/kNN/NB) + variantes de datos (vistas, balanceo)
+ ├── busqueda_hiperparametros.py  # búsqueda acotada con presupuesto fijo por modelo (Tabla 4.2), misma partición y pliegues que el baseline
+ ├── estadistica.py            # kappa, bootstrap pareado (B=1000), McNemar, Wilson, Holm, no inferioridad
+ ├── calibracion.py            # MAE/RMSE/Bland-Altman del calibre y error en 34,5-42 mm (H2)
+ ├── evidencia_hipotesis.py    # E4 (1 vista vs 5, McNemar), línea base de E1, F1 por clase (E3), control de atajo por sesión
  ├── informe.py                # genera el informe Word/Markdown con las cifras reales
- ├── matriz_consistencia.py    # genera la matriz de consistencia (Word + Markdown) desde docs/matriz_consistencia.yaml
+ ├── matriz_consistencia.py    # genera docs/Matriz_de_Consistencia.docx y .md desde docs/matriz_consistencia.yaml
  ├── modelo_mvcnn.py           # arquitectura MVCNN (baseline profundo; pendiente de entrenar)
  ├── modelo_multitarea.py      # backbone compartido + cabezales
  └── api_inferencia.py
 tests/                         # pruebas anti-fuga y de extracción (pytest)
-scripts/                       # generar_datos_demo.py (dataset sintético para probar el pipeline)
-configs/                       # fe.yaml, baseline.yaml y YAML de los experimentos profundos (E2_mvcnn, E5)
+scripts/                       # generar_datos_demo.py (dataset sintético) · construir_notebook_matriz.py
+configs/                       # fe.yaml, baseline.yaml, hiperparametros.yaml y YAML de los experimentos profundos (E2_mvcnn, E5)
 docs/                          # diccionario_datos.md, feature_engineering.md, plantillas
 logs/                          # métricas, corridas de FE, test_evaluado.json
 informe/                       # informe generado (Word + Markdown + figuras)
@@ -158,7 +176,8 @@ Resultados: `logs/fe_runs/<corrida>/tabla_final.md` (media ± desviación), `log
 | 5b | **Importancia de variables** | `python src/importancia.py` · `notebooks/Importancia_Variables.ipynb` | ✅ |
 | 6 | **Baseline + variantes de datos** | `python src/modelo_baseline.py` · `notebooks/Baseline_basico.ipynb` | ✅ |
 | 7 | **Informe** (EDA + FE + importancia + baseline + variantes) | `python src/informe.py` | ✅ |
-| 7b | **Matriz de consistencia** | `python src/matriz_consistencia.py` (edita `docs/matriz_consistencia.yaml`) | ✅ |
+| 6b | **Búsqueda de hiperparámetros** | `python src/busqueda_hiperparametros.py` · `notebooks/Hiperparametros.ipynb` | ✅ |
+| 7b | **Matriz de consistencia** | `notebooks/Matriz_Consistencia.ipynb` · `python src/matriz_consistencia.py` → `docs/Matriz_de_Consistencia.docx` | ✅ |
 | 8 | Corrección de color y escala por sesión | `src/preprocesamiento.py` | 🚧 esqueleto |
 | 9 | MVCNN y pipeline multitarea (GPU) | `src/modelo_mvcnn.py`, `src/modelo_multitarea.py` | 🚧 arquitectura definida, sin entrenamiento |
 | 10 | Inferencia sobre un fruto nuevo | `src/api_inferencia.py` | 🚧 esqueleto |
@@ -176,17 +195,28 @@ Detalle: [`docs/baseline_variantes.md`](docs/baseline_variantes.md). Resultados:
 - **EDA** → `notebooks/EDA_basico.ipynb`.
 - **Feature Engineering** → `logs/fe_runs/<corrida>/tabla_final.md`.
 - **Baseline y variantes de datos** → `logs/metrics_baseline.txt`.
+- **Búsqueda de hiperparámetros** → `logs/metrics_hiperparametros.txt` y `logs/hiperparametros_runs/<corrida>/` (ver [`docs/hiperparametros.md`](docs/hiperparametros.md)).
 - **Importancia de variables** → `logs/importancia_runs/<corrida>/` (ver [`docs/importancia_variables.md`](docs/importancia_variables.md)).
 - **Informe** → `informe/Informe_EDA_FE_Baseline.docx` (y `.md`).
-- **Matriz de consistencia** → `informe/Matriz_de_Consistencia.docx` y `docs/matriz_consistencia.md`.
+- **Matriz de consistencia** → [`docs/Matriz_de_Consistencia.docx`](docs/Matriz_de_Consistencia.docx) y [`docs/matriz_consistencia.md`](docs/matriz_consistencia.md); también es el **Anexo A** del informe.
 - **Métrica central**: F1 macro (más F1, recall y PR-AUC de la clase Fábrica).
 - **Más adelante**: MVCNN y multitarea → `logs/metrics_multitarea.txt`; comparación final con McNemar / bootstrap pareado sobre TEST.
+
+---
+
+## ⚠️ Lo que los datos actuales NO permiten concluir
+Los notebooks lo comprueban automáticamente (ver `Baseline_basico` §0, `EDA_basico` §3 y la sección 4 de `Matriz_Consistencia`):
+- **Cada categoría proviene de una sola sesión (lote × fecha).** Un clasificador que solo conoce la sesión ya obtiene F1 macro ≈ 0,73 en validación (el dummy, 0,07), y las variables de imagen identifican la sesión con exactitud ≈ 0,90. La condición de la sección 4.3 de la tesis (ninguna categoría concentrada en un lote o fecha) no se cumple, así que las métricas pueden reflejar el contexto y no el fruto.
+- **Falta `data/raw/calibracion_sesiones.csv`**: sin la escala mm/px por sesión `diam_ecu_mm` queda vacío y H2 (MAE ≤ 1,0 mm) no es medible; los píxeles de distintas sesiones no son comparables.
+- **Faltan** `panel_evaluaciones.csv` (H1), la fecha de cosecha, el tiempo cosecha–captura, el productor y el tipo de defecto.
+- Hay 511 frutos (≈100 por categoría) frente a los ≥ 1 500 de la Tabla 4.1.
 
 ---
 
 ## 📌 Roadmap
 - [x] Semana 2 → Diseño del flujo reproducible (diagrama, partición, riesgos).
 - [x] Semana 3 → Ingesta + EDA + Feature Engineering + baseline + variantes de datos + informe.
+- [x] Búsqueda de hiperparámetros (clásicos) y calibración de θ_def/θ_col; métricas y estadística de la tesis (kappa, bootstrap, McNemar).
 - [ ] Semana 4 → Corrección de color/escala, segmentación, atributos, regla comercial y MVCNN.
 
 ---

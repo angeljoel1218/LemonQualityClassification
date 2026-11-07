@@ -264,6 +264,7 @@ def construir(c: dict, e: dict, val, F: dict, demo: bool) -> list:
             "mejoran con evidencia estadística: " + ", ".join(f"{r.variante} ({r.modelo}, Δ {r.dif_media:+.3f})" for r in mej.itertuples()) + "."
             if len(mej) else "ninguna mostró una mejora estadísticamente demostrada sobre el baseline (Holm, α = 0,05); "
                              "las diferencias observadas están dentro de la variabilidad entre pliegues."))
+    items.append("Anexo A: matriz de consistencia (problema, objetivos, hipótesis, variables e indicadores) con el estado de la evidencia de cada hipótesis en este repositorio.")
     B.append(("bullets", items))
 
     # ------------------------------------------------------------------ datos
@@ -487,7 +488,7 @@ def a_markdown(B: list, titulo: str, figrel: str) -> str:
 
 
 # =================================================================================== render Word
-def a_docx(B: list, titulo: str, ruta: Path, autores: str):
+def a_docx(B: list, titulo: str, ruta: Path, autores: str, matriz: dict | None = None):
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
@@ -557,6 +558,14 @@ def a_docx(B: list, titulo: str, ruta: Path, autores: str):
             for row in tb.rows:
                 for j, cell in enumerate(row.cells): cell.width = Cm(ancho[j])
             doc.add_paragraph()
+    if matriz:                                   # Anexo A: matriz de consistencia en una seccion horizontal
+        from docx.enum.section import WD_ORIENT, WD_SECTION
+        from src import matriz_consistencia as mc
+        s2 = doc.add_section(WD_SECTION.NEW_PAGE)
+        s2.orientation = WD_ORIENT.LANDSCAPE
+        s2.page_width, s2.page_height = Cm(29.7), Cm(21.0)
+        s2.left_margin = s2.right_margin = s2.top_margin = s2.bottom_margin = Cm(1.4)
+        mc.construir_en(doc, matriz, con_titulo=False)
     ruta.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(ruta))
 
@@ -575,10 +584,14 @@ def generar(procesados: Path, salida: Path, autores: str = "Angel Joel Alvarado 
     demo = "demo" in str(procesados).lower()
     B = construir(c, e, val, F, demo)
     titulo = "Informe de avance: EDA, Feature Engineering y Baseline con variantes de datos"
+    import yaml
+    from src import matriz_consistencia as mc
+    ym = ROOT / "docs" / "matriz_consistencia.yaml"
+    matriz = yaml.safe_load(ym.read_text(encoding="utf-8")) if ym.exists() else None
     md = salida / "Informe_EDA_FE_Baseline.md"
-    md.write_text(a_markdown(B, titulo, "figuras"), encoding="utf-8")
+    md.write_text(a_markdown(B, titulo, "figuras") + ("\n" + mc.a_markdown(matriz, anexo=True) if matriz else ""), encoding="utf-8")
     dx = salida / "Informe_EDA_FE_Baseline.docx"
-    a_docx(B, titulo, dx, autores)
+    a_docx(B, titulo, dx, autores, matriz)
     return dict(docx=dx, md=md, figuras=F)
 
 

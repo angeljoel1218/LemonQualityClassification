@@ -1,12 +1,12 @@
 # Contenido de la matriz de consistencia. EDITAR AQUI y regenerar con:  python src/matriz_consistencia.py
-# Los textos de problemas, objetivos, hipotesis, variables e indicadores provienen del proyecto de tesis.
-# Lo marcado con (†) es redaccion propuesta para completar la matriz (derivada de las secciones indicadas).
+# Alineada con el Anexo "Matriz de Consistencia" (Tabla A1) del Plan de tesis corregido: 8 problemas, 8 objetivos y 8 hipotesis
+# especificos que se corresponden UNO A UNO (P1-OE1-H1 ... P8-OE8-H8) y la numeracion de las ablaciones E1 a E6 (Tabla 4.3).
 
 titulo: "Matriz de consistencia"
 proyecto: "Sistema de visión por computadora basado en Deep Learning para la clasificación comercial post-cosecha del limón sutil en las categorías Extra, Primera, Segunda, Tercera y Fábrica"
 autores: "Angel Joel Alvarado Crisanto · Javier Fernandez Purizaca"
 asesora: "Mtr. Ing. Maria Fernanda Tejada Begazo"
-leyenda: "† Redacción propuesta para completar la matriz, derivada de las secciones correspondientes del proyecto (Tabla 3.7, secciones 4.5.3, 4.5.7 y 4.6.4). Tabla 3.6 y Tabla 4.3: hipótesis específicas y ablaciones E1 a E6."
+leyenda: "Fuente: Plan de tesis corregido (Tabla A1; hipótesis en la Tabla 3.6, variables en la Tabla 3.7 y ablaciones E1 a E6 en la Tabla 4.3). Los umbrales son provisionales hasta ratificarlos tras la prueba piloto."
 
 general:
   problema: "¿Cuál es el desempeño de un sistema de visión por computadora basado en aprendizaje profundo para clasificar limón sutil en las categorías Extra, Primera, Segunda, Tercera y Fábrica, a partir de imágenes capturadas en condiciones controladas, en comparación con un estándar de referencia construido con mediciones físicas y consenso experto, y frente al desempeño de operarios evaluados contra ese mismo estándar?"
@@ -17,9 +17,8 @@ general:
     - "Uso de segmentación: con o sin segmentación explícita"
     - "Preprocesamiento: ninguno; corrección de brillo; corrección de brillo y color"
     - "Estrategia de balanceo: ninguna; pesos de clase; focal loss; aumento dirigido; combinación"
-    - "Número de vistas por fruto: una (frontal) o cinco"
+    - "Número de vistas por fruto: 1 vista ecuatorial (0°) frente a 5 vistas (0°, 90°, 180°, 270° y pedúnculo)"
     - "Condición de iluminación: controlada o con cambio moderado"
-    - "Resolución de entrada: dos resoluciones, definidas en el piloto"
   dependientes:
     - "Categoría final: F1 macro, exactitud balanceada, recall por clase (en particular Fábrica), kappa"
     - "Calibre: MAE y RMSE en mm; error cerca de los límites"
@@ -40,152 +39,115 @@ general:
 especificos:
   - id: "1"
     problema: "P1. ¿Qué acuerdo inter-evaluador (kappa de Fleiss) e intra-evaluador alcanza un panel de agrónomos al etiquetar color y defectos, y qué reglas de desempate permiten fijar una categoría de referencia auditable?"
-    objetivo: "OE1. Definir y validar el protocolo de categoría de referencia: verificar el estándar comercial, fijar la regla jerárquica, medir el calibre con calibrador y constituir un panel de agrónomos que evalúe color y defectos, con kappa de Fleiss, repetibilidad intra-evaluador y regla de desempate establecidos antes de la recolección definitiva."
+    objetivo: "OE1. Validar la fiabilidad y repetibilidad del protocolo de referencia comercial, determinando el acuerdo inter- e intra-evaluador de un panel de agrónomos sobre la muestra piloto."
     hipotesis: "H1. El panel de etiquetado es lo bastante fiable como para constituir el estándar experto."
-    independientes: ["Protocolo de etiquetado: rúbrica, panel de agrónomos y regla de desempate †"]
-    dependientes: ["Fiabilidad del panel de etiquetado"]
+    independientes: ["Protocolo de etiquetado: rúbrica, panel de agrónomos y regla de desempate"]
+    dependientes: ["Fiabilidad del panel de etiquetado (interviniente en la Tabla 3.7)"]
     intervinientes: []
     indicadores:
-      - "Kappa de Fleiss ≥ 0,75"
-      - "Repetibilidad intra-evaluador ≥ 0,80 en el piloto"
-      - "Análisis: kappa de Fleiss y de Cohen; AC1"
+      - "κ de Fleiss ≥ 0,75 y repetibilidad intra-evaluador ≥ 0,80 en la prueba piloto"
+      - "Análisis: coeficientes de Cohen, Fleiss y AC1 de Gwet"
 
   - id: "2"
-    problema: "Sin problema específico propio †: sustenta P2 (calibre) y P4 (color)."
-    objetivo: "OE2. Diseñar y validar el protocolo de captura multi-vista (mínimo cuatro vistas ecuatoriales y una del pedúnculo), incluida la calibración píxel-milímetro y el control colorimétrico de cada sesión."
-    hipotesis: "Sin hipótesis formal †: objetivo de diseño. Su cumplimiento se verifica en la prueba piloto (sección 4.5.7)."
-    independientes: ["Protocolo de captura multi-vista: ≥ 4 vistas ecuatoriales + pedúnculo; objeto de referencia de tamaño conocido; carta de color; distancia cámara-fruto fija †"]
-    dependientes: ["Error de la calibración píxel-milímetro †", "Sostenibilidad de la captura (tiempo por fruto) †"]
+    problema: "P2. ¿Qué error, en milímetros, tiene el calibre ecuatorial estimado por segmentación calibrada frente a la medición con calibrador, en general y cerca de los límites entre categorías?"
+    objetivo: "OE2. Determinar la precisión métrica en la estimación del calibre ecuatorial mediante segmentación calibrada frente al calibrador físico en rangos generales y en fronteras críticas."
+    hipotesis: "H2. La estimación de calibre por segmentación calibrada es lo bastante exacta para separar categorías."
+    independientes: ["Método de estimación del calibre: segmentación calibrada con escala píxel-milímetro por sesión (cabezal de calibre en C3)"]
+    dependientes: ["Calibre: MAE y RMSE en mm; error cerca de los límites"]
     intervinientes: []
     indicadores:
-      - "MAE ≤ 1,0 mm en la calibración píxel-milímetro (piloto)"
-      - "Captura multi-vista sostenible en el tiempo disponible por fruto (piloto)"
-      - "Factor píxel-milímetro documentado por sesión"
+      - "MAE ≤ 1,0 mm y RMSE ≤ 1,5 mm respecto a las mediciones con vernier"
+      - "Error reportado en 34,5; 35; 36; 37; 38; 39 y 42 mm"
+      - "Análisis: MAE, RMSE y gráfico de Bland–Altman"
 
   - id: "3"
-    problema: "Sin problema específico propio †: habilita la respuesta a P1–P8."
-    objetivo: "OE3. Construir un conjunto de datos de limón sutil con el tamaño y las cuotas por categoría de la Tabla 4.1, diversificado por lote y fecha, con máscaras de fruto y de defectos, y particionado por fruto, lote y fecha para evitar fuga de información."
-    hipotesis: "Sin hipótesis formal †: objetivo de construcción. Se verifica con las cuotas, la cobertura por lote y fecha y la ausencia de fuga."
-    independientes: ["Tamaño y composición del conjunto: cuotas por categoría, lotes y fechas †", "Regla de partición †"]
-    dependientes: ["Cobertura de cuotas y diversidad †", "Ausencia de fuga de información †"]
-    intervinientes: ["Lote, fecha y prevalencia"]
-    indicadores:
-      - "≥ 1 500 frutos (≈ 7 500 imágenes)"
-      - "Cuotas mínimas: Extra 250, Primera 250, Segunda 250, Tercera 200, Fábrica 200"
-      - "≥ 3 lotes y ≥ 4 fechas; ningún lote ni fecha concentra la mayoría de una categoría"
-      - "Un mismo fruto no aparece en dos subconjuntos"
-
-  - id: "4"
-    problema: "Sin problema específico propio †: habilita P6."
-    objetivo: "OE4. Fijar antes del entrenamiento la arquitectura del sistema (segmentación, estimación de atributos y regla comercial) y un clasificador directo de referencia, e implementar ambos."
-    hipotesis: "Sin hipótesis formal †: habilita H6."
-    independientes:
-      - "Arquitectura: clasificador directo; segmentación con clasificador aprendido; atributos con regla comercial; multitarea con cabezal de calibre (C0 a C3)"
-      - "Uso de segmentación"
-      - "Resolución de entrada: dos resoluciones, definidas en el piloto"
-    dependientes: ["Arquitecturas y clasificador de referencia fijados y versionados antes de entrenar †"]
-    intervinientes: []
-    indicadores:
-      - "Arquitectura definida antes del entrenamiento †"
-      - "Ambos sistemas implementados y entrenados con los mismos datos y la misma partición †"
-
-  - id: "5 (E4)"
     problema: "P3. ¿En qué medida capturar varias vistas por fruto reduce, frente a una sola vista, los defectos que pasan sin detectarse y que corresponden a Fábrica?"
-    objetivo: "OE5. Evaluar, mediante experimentos de ablación (E1 a E6), el efecto del preprocesamiento, del balanceo de clases, del número de vistas y de la arquitectura.\nAblación E4: una vista frontal / cinco vistas."
+    objetivo: "OE3. Evaluar el efecto de la captura multi-vista en la reducción de defectos no detectados, comparando una vista ecuatorial (0°) frente a la agregación de cinco vistas."
     hipotesis: "H3. Capturar cinco vistas reduce los defectos no detectados."
-    independientes: ["Número de vistas por fruto (una frontal o cinco)"]
+    independientes: ["Número de vistas por fruto: 1 vista ecuatorial (0°) frente a 5 vistas (E4)"]
     dependientes: ["Segmentación y defectos: proporción de frutos de Fábrica por defecto que pasan sin detectarse; sensibilidad por tipo de defecto"]
     intervinientes: []
     indicadores:
-      - "Reducción ≥ 15 puntos porcentuales en la proporción de frutos de Fábrica por defecto que pasan sin detectarse, frente a una vista frontal (E4)"
-      - "Análisis: McNemar con intervalo de la diferencia"
+      - "Reducción ≥ 15 puntos porcentuales en la tasa de frutos de la categoría Fábrica omitidos"
+      - "Análisis: prueba de McNemar para muestras pareadas, con intervalo de la diferencia (Ablación E4)"
 
-  - id: "5 (E1)"
+  - id: "4"
     problema: "P4. ¿Cómo influyen la corrección de brillo y la normalización de color en la clasificación de color y madurez y en la separación de Primera y Segunda?"
-    objetivo: "OE5 (continuación). Ablación E1: sin corrección de brillo y color / con corrección."
+    objetivo: "OE4. Determinar la influencia de la corrección de iluminación y la normalización colorimétrica en la clasificación de madurez en espacio CIELAB y en la separación del par Primera–Segunda."
     hipotesis: "H4. La corrección de brillo y la normalización de color mejoran la clasificación de color y la separación de Primera y Segunda."
-    independientes: ["Preprocesamiento (ninguno; corrección de brillo; corrección de brillo y color)"]
+    independientes: ["Preprocesamiento: ninguno; corrección de brillo; corrección de brillo y color (E1)"]
     dependientes: ["Categoría final: F1 de color/madurez y F1 del par Primera–Segunda"]
     intervinientes: []
     indicadores:
-      - "+5 puntos en F1 de color/madurez y +3 puntos en F1 del par Primera–Segunda, frente a un modelo idéntico sin preprocesamiento (E1)"
-      - "Análisis: bootstrap pareado; Wilcoxon entre semillas"
+      - "+5 pp en F1 de color/madurez y +3 pp en F1 de Primera–Segunda respecto al modelo sin preprocesamiento"
+      - "Análisis: bootstrap pareado y Wilcoxon entre semillas (Ablación E1)"
 
-  - id: "5 (E3)"
+  - id: "5"
     problema: "P5. ¿Cuál es el aporte de la ponderación de clases, el focal loss y el aumento de datos en las categorías con menos ejemplos, Tercera y Fábrica?"
-    objetivo: "OE5 (continuación). Ablación E3: sin balanceo / pesos de clase / focal loss / aumento dirigido."
+    objetivo: "OE5. Evaluar el impacto de las técnicas de balanceo de datos (ponderación, focal loss y data augmentation) en la sensibilidad y F1 de las clases minoritarias."
     hipotesis: "H5. Ponderación de clases, focal loss y aumento dirigido mejoran las clases minoritarias."
-    independientes: ["Estrategia de balanceo (ninguna; pesos de clase; focal loss; aumento dirigido; combinación)"]
-    dependientes: ["Categoría final: F1 por clase, en particular Tercera y Fábrica"]
+    independientes: ["Estrategia de balanceo: ninguna; pesos de clase; focal loss; aumento dirigido; combinación (E3)"]
+    dependientes: ["Categoría final: F1 y sensibilidad por clase, en particular Tercera y Fábrica"]
     intervinientes: []
     indicadores:
-      - "+8 puntos en F1 de Tercera y de Fábrica frente al modelo sin estas técnicas; aporte de cada nivel reportado (E3)"
-      - "Análisis: bootstrap pareado; Wilcoxon entre semillas"
-
-  - id: "5 (E2, E5)"
-    problema: "P6. ¿Supera un sistema que estima atributos y aplica una regla comercial a un clasificador directo de cinco clases entrenado con los mismos datos?"
-    objetivo: "OE5 (continuación). Ablaciones E2 (clasificación directa / segmentación con clasificación por atributos) y E5 (CNN convencional / arquitectura multitarea)."
-    hipotesis: "H6. La arquitectura por atributos supera al clasificador directo."
-    independientes: ["Arquitectura", "Uso de segmentación"]
-    dependientes: ["Categoría final: F1 macro"]
-    intervinientes: []
-    indicadores:
-      - "F1 macro mayor en ≥ 3 puntos; el intervalo de confianza del 95 % de la diferencia excluye 0 (E2, E5)"
-      - "Análisis: bootstrap pareado"
+      - "+8 pp en F1 de Tercera y Fábrica respecto al modelo sin balanceo; aporte de cada nivel reportado"
+      - "Análisis: pareado y prueba de Wilcoxon (Ablación E3)"
 
   - id: "6"
-    problema: "P2. ¿Qué error, en milímetros, tiene el calibre ecuatorial estimado por segmentación calibrada frente a la medición con calibrador, en general y cerca de los límites entre categorías?"
-    objetivo: "OE6. Medir el desempeño con métricas específicas para cada tarea: F1 macro y kappa para la categoría final, MAE en milímetros para el calibre, IoU y Dice para las máscaras, sensibilidad por tipo de defecto y latencia por fruto."
-    hipotesis: "H2. La estimación de calibre por segmentación calibrada es lo bastante exacta para separar categorías."
-    independientes: ["Método de estimación del calibre: segmentación calibrada / cabezal de calibre †"]
-    dependientes: ["Calibre: MAE y RMSE en mm; error cerca de los límites", "Segmentación y defectos: IoU, Dice, AP de máscara, sensibilidad por tipo de defecto"]
+    problema: "P6. ¿Supera un sistema que estima atributos y aplica una regla comercial a un clasificador directo de cinco clases entrenado con los mismos datos?"
+    objetivo: "OE6. Comparar el desempeño clasificatorio de la arquitectura desacoplada por atributos y regla jerárquica frente a un clasificador directo end-to-end."
+    hipotesis: "H6. La arquitectura por atributos supera al clasificador directo."
+    independientes: ["Arquitectura: clasificador directo; segmentación con clasificador aprendido; atributos con regla comercial; multitarea con cabezal de calibre (C0 a C3)", "Uso de segmentación: con o sin segmentación explícita"]
+    dependientes: ["Categoría final: F1 macro y su explicabilidad"]
     intervinientes: []
     indicadores:
-      - "MAE ≤ 1,0 mm y RMSE ≤ 1,5 mm frente al calibrador"
-      - "Error reportado en 34,5; 35; 36; 37; 38; 39 y 42 mm"
-      - "Análisis: MAE, RMSE, Bland–Altman"
+      - "F1 macro superior en ≥ 3 pp, con intervalo de confianza del 95 % (bootstrap pareado) que excluye el cero"
+      - "Ablaciones E2 y E5"
 
   - id: "7"
     problema: "P7. ¿Su concordancia con el estándar experto es comparable a la de operarios individuales, medida con kappa, F1 macro y pruebas pareadas?"
-    objetivo: "OE7. Comparar el sistema con operarios independientes frente al estándar experto, con kappa, F1 macro, pruebas pareadas, tiempo por fruto y consistencia inter- e intra-operador."
+    objetivo: "OE7. Evaluar la concordancia diagnóstica del sistema respecto al estándar experto en comparación con operarios clasificadores independientes en pruebas pareadas."
     hipotesis: "H7. La concordancia del sistema con el estándar experto no es inferior a la de operarios individuales."
-    independientes: ["Evaluador: sistema frente a operarios individuales †"]
+    independientes: ["Evaluador: sistema frente a operarios individuales"]
     dependientes: ["Categoría final: concordancia con el estándar (kappa, F1 macro)"]
     intervinientes: ["Operarios (experiencia y turno; tiempo por fruto)"]
     indicadores:
-      - "Kappa del sistema menos kappa del operario ≥ −0,05 (límite inferior del intervalo del 95 %)"
-      - "Al menos 3 operarios"
-      - "Análisis: bootstrap pareado; McNemar por operario con corrección de Holm"
+      - "Margen de no inferioridad: κ(sistema) − κ(operario) ≥ −0,05 (límite inferior del IC al 95 %)"
+      - "Al menos 3 operarios; prueba de McNemar con corrección de Holm"
 
   - id: "8"
     problema: "P8. ¿Qué latencia por fruto y qué estabilidad ante pequeñas perturbaciones de captura presenta el sistema en condiciones de laboratorio?"
-    objetivo: "OE8. Implementar una API de inferencia como prototipo de laboratorio y reportar su latencia, sin extender las conclusiones a un entorno industrial."
+    objetivo: "OE8. Determinar la factibilidad computacional y la estabilidad operativa del sistema en laboratorio, midiendo latencia por fruto y robustez ante variaciones moderadas de luz."
     hipotesis: "H8. El sistema es computacionalmente factible y estable en laboratorio."
     independientes: ["Condición de iluminación: controlada o con cambio moderado (E6)"]
     dependientes: ["Rendimiento y estabilidad: latencia mediana y percentil 95; porcentaje de frutos que conservan categoría"]
     intervinientes: []
     indicadores:
-      - "Latencia mediana ≤ 200 ms por fruto (todas las vistas, GPU)"
-      - "≥ 95 % de los frutos conservan la categoría ante perturbaciones leves de captura (E6)"
+      - "Latencia mediana ≤ 200 ms por fruto en GPU (cinco vistas integradas)"
+      - "Consistencia diagnóstica ≥ 95 % ante perturbaciones lumínicas leves (Ablación E6)"
       - "Análisis: mediana y percentil 95; porcentaje de coincidencia"
 
 observaciones:
-  - "Alineación: los problemas P1–P8 y las hipótesis H1–H8 se corresponden uno a uno, pero los objetivos específicos están numerados de otra forma. La matriz los alinea así: OE1↔P1/H1; OE5↔P3–P6/H3–H6 (una fila por ablación); OE6↔P2/H2; OE7↔P7/H7; OE8↔P8/H8."
-  - "Objetivos sin problema ni hipótesis propios: OE2, OE3 y OE4 son de diseño o construcción. Es aceptable, pero conviene declararlo y fijar su criterio de cumplimiento (p. ej. la prueba piloto para OE2 y las cuotas y la ausencia de fuga para OE3)."
-  - "Umbrales de la hipótesis general: F1 macro ≥ 0,90, recall de Fábrica ≥ 0,90 y kappa ≥ 0,80 solo aparecen en la hipótesis general; H1–H8 no contrastan el desempeño absoluto (H6 y H7 son comparaciones). Falta una hipótesis o indicador específico para ellos, o declarar cómo se evaluarán (p. ej. con intervalo de confianza en la prueba interna)."
-  - "«Particionado por fruto, lote y fecha» (OE3) admite dos lecturas: estratificar para que todos los lotes y fechas estén en todos los subconjuntos, o agrupar para evaluar en lotes o fechas no vistos. El repositorio implementa la primera; si se pretende la segunda, el diseño cambia y debe explicitarse."
-  - "«Vista frontal» (H3, E4) no está definida en el protocolo de captura (0°, 90°, 180°, 270° y pedúnculo). Conviene fijar cuál de las vistas es la frontal."
-  - "Variables sin hipótesis ni ablación propias: la resolución de entrada figura como variable independiente en la Tabla 3.7 pero no tiene hipótesis ni experimento asociado; la condición de iluminación sí (H8, E6)."
-  - "Umbrales provisionales: la propia Tabla 3.6 los declara provisionales hasta ratificarlos tras el piloto; la matriz debe actualizarse con los valores definitivos."
+  - "Alineación resuelta: en el Plan corregido, P1–P8, OE1–OE8 y H1–H8 se corresponden uno a uno y cada hipótesis tiene su ablación (H3→E4, H4→E1, H5→E3, H6→E2 y E5, H8→E6). Esta matriz sigue esa numeración; la versión anterior del repositorio usaba otra (OE5 agrupaba las ablaciones y OE2–OE4 eran de diseño)."
+  - "Umbrales de la hipótesis general: la sección 4.6.4 ya fija cómo contrastarlos (IC95 % por bootstrap pareado con B = 1000 sobre la prueba congelada; el límite inferior debe cumplir el umbral). El repositorio lo implementa en src/estadistica.py (bootstrap_pareado y verifica_umbral_ic)."
+  - "Estratificación de la partición (4.3 y 4.4): la tesis pide estratificar por categoría, lote y fecha. El repositorio estratifica por categoría × lote, y la fecha no interviene; además, en los datos actuales cada categoría proviene de una sola sesión (lote × fecha), lo que contradice la condición de 4.3 de que ningún lote ni fecha concentre la mayoría de una categoría. Con ese diseño la sesión predice la categoría y las métricas pueden estar infladas (ver Baseline_basico §0)."
+  - "Escala píxel-milímetro: sin data/raw/calibracion_sesiones.csv el calibre en mm queda vacío y H2 no es medible. Los píxeles de distintas sesiones no son comparables (la escala varía entre 0,058 y 0,093 mm/px), así que diam_ecu_px también arrastra información de sesión."
+  - "Tabla 1.1: sus intervalos literales dejan huecos (36–37 mm y 38–39 mm) y no tienen techo; la regla del repositorio usa cortes continuos en 35, 37 y 39 mm (propuesta de la sección 4.5.2) que el panel y el centro de acopio deben validar. Hoy hay frutos medidos dentro de esos huecos."
+  - "Fábrica por defecto (H3): la tesis no fija el umbral de severidad del panel que define este subconjunto; el repositorio usa severidad ≥ 0,5 provisionalmente. Debe fijarse con la rúbrica (θ_def) antes de medir E4."
+  - "Campos de datos exigidos y ausentes: fecha de cosecha, tiempo entre cosecha y captura (variable interviniente de la Tabla 3.7), productor y tipo de defecto (necesario para la sensibilidad por tipo). Tampoco hay panel_evaluaciones.csv, por lo que H1 no se puede calcular."
+  - "Tamaño de muestra: hay 511 frutos con 5 vistas (≈100 por categoría) frente a los ≥ 1 500 y las cuotas 250/250/250/200/200 de la Tabla 4.1; el valor actual es el de un piloto ampliado, no el de la recolección definitiva."
+  - "Búsqueda de hiperparámetros (Tabla 4.2): se implementa con presupuesto fijo por modelo para los clasificadores clásicos y se deja fijado, sin ejecutar, el espacio del modelo profundo (AdamW, coseno, early stopping, focal loss γ/α, λ multitarea)."
+  - "Umbrales provisionales: la Tabla 3.6 los declara provisionales hasta ratificarlos tras el piloto; la matriz debe actualizarse con los valores definitivos, incluidos θ_def y θ_col."
 
 trazabilidad:   # estado del repositorio frente a cada hipótesis (editar al avanzar)
-  - ["OE3 (datos)", "EDA, partición congelada por fruto y pruebas anti-fuga", "src/ingesta.py, src/particion.py, notebooks/EDA_basico.ipynb", "Implementado"]
-  - ["H1", "Kappa de Fleiss/Cohen, AC1 y repetibilidad a partir de panel_evaluaciones.csv", "Formato definido en docs/diccionario_datos.md; falta el script de consolidación y cálculo", "Pendiente"]
-  - ["H2", "MAE/RMSE del calibre extraído frente al calibrador", "Validación de la extracción (notebook y informe) con features clásicas; falta Bland–Altman, error por rango (34,5–42 mm) y el calibre del modelo profundo", "Parcial"]
-  - ["H3", "Una vista frente a cinco vistas", "Variante V1 del baseline (F1 con modelos clásicos); falta la métrica de defectos no detectados y McNemar", "Parcial"]
-  - ["H4", "Con / sin corrección de brillo y color", "Requiere la corrección con la carta de color (src/preprocesamiento.py es un esqueleto)", "Pendiente"]
-  - ["H5", "Balanceo de clases", "Variante V2 (sobremuestreo y submuestreo aleatorios); faltan pesos de clase, focal loss y aumento dirigido (modelo profundo)", "Parcial"]
-  - ["H6", "Atributos con regla comercial frente a clasificador directo", "Arquitecturas definidas (modelo_mvcnn.py, modelo_multitarea.py) sin entrenar; importancia de variables por dimensión como apoyo; prueba t corregida con Holm disponible, falta el bootstrap pareado", "Pendiente"]
-  - ["H7", "Sistema frente a operarios", "Requiere evaluaciones de operarios (datos); sin código", "Pendiente"]
-  - ["H8", "Latencia y estabilidad ante perturbaciones", "Latencia de extracción de features medida en el informe; falta la latencia del modelo profundo y de la API en GPU, y E6", "Parcial"]
-  - ["Hipótesis general", "F1 macro ≥ 0,90, recall de Fábrica ≥ 0,90 y kappa ≥ 0,80 en la prueba interna", "Requiere el modelo profundo y las categorías completas; el TEST se evalúa una sola vez", "Pendiente"]
+  - ["Datos (Tabla 4.1, 4.3 y 4.4)", "EDA, cuotas, concentración por lote/fecha, partición agrupada por fruto y pruebas anti-fuga", "src/ingesta.py, src/particion.py, src/eda.py, notebooks/EDA_basico.ipynb", "Parcial"]
+  - ["H1 / OE1", "κ de Fleiss/Cohen, AC1 y repetibilidad a partir de panel_evaluaciones.csv", "Formato definido en docs/diccionario_datos.md; cohen y AC1 faltan por consolidar; no hay datos del panel", "Pendiente"]
+  - ["H2 / OE2", "MAE/RMSE del calibre frente al calibrador, Bland–Altman y error en 34,5–42 mm", "src/calibracion.py y Feature_Engineering §2 (con escala provisional mientras falte calibracion_sesiones.csv); falta el calibre del modelo profundo", "Parcial"]
+  - ["H3 / OE3 (E4)", "1 vista (0°) frente a 5 vistas: Fábrica por defecto omitida, McNemar", "src/evidencia_hipotesis.py (e4_defectos_omitidos) y Baseline_basico §4b con el detector clásico; falta el detector profundo y la sensibilidad por tipo de defecto", "Parcial"]
+  - ["H4 / OE4 (E1)", "Con / sin corrección de brillo y color", "Línea base sin preprocesamiento fijada en Baseline_basico §4c; falta src/preprocesamiento.py (carta de color)", "Pendiente"]
+  - ["H5 / OE5 (E3)", "Pesos de clase, sobre/submuestreo, focal loss y aumento dirigido", "Sobre/submuestreo (baseline V2) y pesos de clase (Hiperparametros.ipynb §6) con F1 de Tercera y Fábrica; faltan focal loss y aumento (modelo profundo)", "Parcial"]
+  - ["H6 / OE6 (E2, E5)", "Atributos con regla comercial frente a clasificador directo", "Regla jerárquica implementada con calibración de θ_def y θ_col (Hiperparametros.ipynb §10); arquitecturas profundas definidas sin entrenar; bootstrap pareado disponible en src/estadistica.py", "Parcial"]
+  - ["H7 / OE7", "Sistema frente a operarios: κ, bootstrap pareado y McNemar con Holm", "Funciones de no inferioridad, McNemar y Holm listas en src/estadistica.py; faltan las evaluaciones de operarios", "Pendiente"]
+  - ["H8 / OE8 (E6)", "Latencia y estabilidad ante perturbaciones", "Latencia de extracción de features medida en el informe; falta la latencia del modelo profundo y de la API en GPU, y E6", "Parcial"]
+  - ["Hiperparámetros (Tabla 4.2)", "Búsqueda acotada con presupuesto fijo", "src/busqueda_hiperparametros.py, configs/hiperparametros.yaml, notebooks/Hiperparametros.ipynb; espacio profundo definido sin ejecutar", "Parcial"]
+  - ["Hipótesis general", "F1 macro ≥ 0,90, recall de Fábrica ≥ 0,90 y κ ≥ 0,80 (límite inferior del IC95 % bootstrap, B = 1000)", "Requiere el modelo profundo, las categorías completas y evaluar TEST una sola vez; hoy solo hay estimaciones informativas en validación con modelos clásicos", "Pendiente"]
