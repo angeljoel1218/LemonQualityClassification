@@ -1,0 +1,99 @@
+# Contenido de la matriz de consistencia. EDITAR AQUI y regenerar con:  python src/matriz_consistencia.py
+# Alineada con el Anexo 1 "Matriz de Consistencia" (Tabla A1) del Plan de tesis v4: un problema general y CUATRO especificos
+# (P1-OE1-H1 ... P4-OE4-H4) que se corresponden uno a uno; las ablaciones E1 a E5 se detallan en la Tabla 4.4 del plan.
+
+titulo: "Matriz de consistencia"
+proyecto: "Sistema de visión por computadora basado en deep learning para la clasificación comercial post-cosecha del limón sutil en cinco categorías"
+autores: "Angel Joel Alvarado Crisanto · Javier Fernandez Purizaca"
+asesora: "Ph.D. Glen Dario Rodriguez Rafael"
+leyenda: "Fuente: Plan de tesis v4 (Tabla A1; hipótesis en la sección 3.3, variables en la Tabla 3.7 y ablaciones E1 a E5 en la Tabla 4.4). Los umbrales de la rúbrica (a1-a3, θ_def, h_am, p_am) son provisionales hasta ratificarlos tras la prueba piloto."
+
+general:
+  problema: "¿En qué medida un sistema de visión por computadora con arquitectura híbrida (segmentación neuronal, estimación analítica de calibre y color, y regla jerárquica explicable) alcanza un desempeño de clasificación comercial post-cosecha del limón sutil, medido por el F1 macro frente a un estándar de referencia independiente, y cómo se compara con un clasificador directo y con operarios en ejercicio?"
+  objetivo: "Desarrollar y evaluar experimentalmente un sistema de visión por computadora con arquitectura híbrida para la clasificación comercial post-cosecha del limón sutil en cinco categorías, estimando su F1 macro frente a un estándar de referencia independiente y comparándolo con el de un clasificador directo y con el de operarios en ejercicio, en condiciones controladas."
+  hipotesis: "El sistema de visión por computadora con arquitectura híbrida alcanza un F1 macro ≥ 0,85 (límite inferior del IC del 95 %, bootstrap por fruto) en la clasificación comercial del limón sutil, en un conjunto de prueba independiente y en condiciones controladas. Las comparaciones con el clasificador directo y con operarios se contrastan en H3 y H4."
+  independientes:
+    - "Arquitectura del sistema: clasificador directo (ResNet-50, 5 vistas) frente a híbrida (segmentación neuronal + atributos analíticos + regla jerárquica)"
+    - "Preprocesamiento de brillo y color: ninguno; corrección de brillo; corrección de brillo y color"
+    - "Estrategia de balanceo: ninguna; pesos de clase; focal loss; aumento dirigido; combinación"
+    - "Número de vistas por fruto: 1 vista ecuatorial (0°) frente a 5 vistas (0°, 90°, 180°, 270° y pedúnculo)"
+    - "Condición de iluminación: controlada o con cambio moderado"
+  dependientes:
+    - "Categoría comercial final: F1 macro, exactitud balanceada, recall por clase (en particular Fábrica), kappa"
+    - "Calibre estimado: MAE y RMSE en mm; acuerdo de categoría por calibre"
+    - "Segmentación y defectos: IoU, Dice, AP de máscara, sensibilidad por tipo de defecto"
+    - "Rendimiento y estabilidad: latencia mediana y percentil 95; porcentaje de frutos que conservan categoría"
+  intervinientes:
+    - "Lote, fecha y prevalencia"
+    - "Fiabilidad del panel (kappa inter-evaluador y repetibilidad)"
+    - "Tiempo entre cosecha y captura"
+    - "Variabilidad de operarios (experiencia y turno; tiempo por fruto)"
+  indicadores:
+    - "F1 macro ≥ 0,85 (límite inferior del IC95 %, bootstrap estratificado B = 5 000)"
+    - "Técnica: segmentación neuronal (YOLOv8-seg) + calibre y color analíticos + regla jerárquica"
+
+especificos:
+  - id: "1"
+    problema: "P1. ¿Cuál es el MAE (mm) de la segmentación calibrada frente al calibrador vernier, y qué concordancia de categoría por calibre se obtiene, incluidos los frutos cercanos a los límites?"
+    objetivo: "OE1. Determinar la precisión métrica del calibre estimado, cuantificando MAE y concordancia de categoría por calibre frente al vernier."
+    hipotesis: "H1. La estimación de calibre por segmentación calibrada alcanza MAE ≤ 0,50 mm (límite superior del IC del 95 % ≤ 0,50), RMSE ≤ 0,70 mm (límite superior del IC ≤ 0,70) y exactitud dentro de una categoría adyacente ≥ 0,98; la concordancia exacta se reporta sin umbral."
+    independientes: ["Método de estimación del calibre: d_est = máx(media 0°/180°, media 90°/270°) con escala píxel-milímetro por sesión"]
+    dependientes: ["Calibre: MAE y RMSE en mm; error cerca de los límites; exactitud en categoría adyacente"]
+    intervinientes: []
+    indicadores:
+      - "MAE ≤ 0,50 mm; RMSE ≤ 0,70 mm; exactitud adyacente ≥ 0,98"
+      - "Error reportado en 34,5; 35; 36; 37; 38; 39 y 42 mm"
+      - "Análisis: Bland–Altman, MAE, RMSE y concordancia en los intervalos críticos; bootstrap por fruto"
+
+  - id: "2"
+    problema: "P2. ¿En cuántos puntos porcentuales aumenta el recall de Fábrica al pasar de una vista (0°) a cinco vistas agregadas, sobre los mismos frutos?"
+    objetivo: "OE2. Evaluar el efecto de la captura multi-vista sobre el recall de Fábrica, comparando una vista (0°) con cinco vistas agregadas."
+    hipotesis: "H2. La captura multi-vista incrementa en al menos 15 puntos porcentuales el recall de Fábrica respecto de una única vista ecuatorial (0°), sobre los mismos frutos de la prueba (límite inferior del IC del 95 % > 0; McNemar pareado con Holm)."
+    independientes: ["Número de vistas por fruto: 1 vista ecuatorial (0°) frente a 5 vistas (E1)"]
+    dependientes: ["Recall de Fábrica; sensibilidad por tipo de defecto (secundaria)"]
+    intervinientes: []
+    indicadores:
+      - "Incremento ≥ 15 pp y límite inferior del IC95 % > 0"
+      - "Análisis: McNemar pareado exacto; diferencia de recall con IC por bootstrap pareado (E1)"
+
+  - id: "3"
+    problema: "P3. ¿Supera la arquitectura híbrida por atributos y regla jerárquica al clasificador directo end-to-end en F1 macro?"
+    objetivo: "OE3. Comparar el F1 macro de la arquitectura híbrida con el del clasificador directo end-to-end, con las mismas particiones y datos."
+    hipotesis: "H3. La arquitectura híbrida supera al clasificador directo en F1 macro (límite inferior del IC del 95 % de la diferencia, por bootstrap pareado, > 0; relevancia práctica si la diferencia es ≥ 0,05)."
+    independientes: ["Arquitectura: clasificador directo (ResNet-50, 5 vistas, promedio de logits) frente a híbrida (E2)"]
+    dependientes: ["Categoría final: F1 macro"]
+    intervinientes: []
+    indicadores:
+      - "Diferencia de F1 macro (híbrido − directo): límite inferior del IC95 % > 0; diferencia puntual ≥ 0,05 = relevancia práctica"
+      - "Análisis: bootstrap pareado estratificado (B = 5 000) con corrección de Holm"
+
+  - id: "4"
+    problema: "P4. ¿Es la concordancia (κ) del sistema frente al estándar de referencia no inferior (δ = 0,05) a la de operarios en ejercicio, evaluados de forma pareada?"
+    objetivo: "OE4. Contrastar la no inferioridad del kappa del sistema respecto del de operarios en ejercicio (δ = 0,05), frente al estándar de referencia."
+    hipotesis: "H4. El kappa del sistema no es inferior al promedio de los operarios: límite inferior del IC del 95 % de κ_sis − κ_op ≥ −0,05 (δ = 0,05). La no inferioridad no implica superioridad."
+    independientes: ["Evaluador: sistema frente a operarios en ejercicio (al menos tres), sobre los mismos frutos"]
+    dependientes: ["Concordancia con el estándar de referencia (κ)"]
+    intervinientes: ["Variabilidad de operarios (experiencia y turno; tiempo por fruto)"]
+    indicadores:
+      - "κ_sis − κ_op ≥ −0,05 (límite inferior del IC95 %)"
+      - "Análisis: bootstrap pareado por fruto; comparaciones por operario secundarias (McNemar con Holm)"
+
+observaciones:
+  - "Alineación con el plan v4: HG + P1–P4, OE1–OE4 y H1–H4 se corresponden uno a uno. La versión anterior del repositorio usaba ocho hipótesis (H1–H8), una red multitarea y B = 1 000; todo eso quedó reemplazado."
+  - "Familias de contraste (sección 3.3): la hipótesis general se evalúa sola (α = 0,05) y {H1, H2, H3, H4} con corrección de Holm. Los tamaños de muestra se calcularon con el α nominal sin ajustar, por lo que la potencia efectiva de los contrastes más exigentes es algo menor."
+  - "Los experimentos E1 (H2) y E2 (H3) son confirmatorios; E3, E4 y E5 son exploratorios y se eligen solo con el conjunto de validación. La prueba se evalúa una sola vez con modelos y umbrales congelados (src/protocolo.py)."
+  - "Tamaño de muestra: el plan exige 1 500 frutos válidos (Tabla 4.1). Con menos frutos la partición se marca PROVISIONAL (data/processed/particion_meta.json) y no sirve para la evaluación confirmatoria."
+  - "Escala píxel-milímetro: sin data/raw/calibracion_sesiones.csv el calibre en mm queda vacío y H1 no es medible (ver src/preprocesamiento.py: escalas_de_sesiones)."
+  - "Diversificación (4.4): ninguna categoría puede provenir de un solo lote o fecha; ningún lote o fecha puede aportar más del 35 % de una categoría. Si no se cumple, la sesión puede predecir la categoría."
+  - "Los umbrales de la rúbrica (a1–a3, θ_def, h_am, p_am) se fijan con el panel en el piloto y se congelan antes de la recolección definitiva."
+
+trazabilidad:   # estado del repositorio frente a cada hipótesis (editar al avanzar)
+  - ["Datos (Tabla 4.1 y sección 4.4)", "Ingesta, EDA, cuotas, diversificación, partición por cuotas con prueba balanceada y lote reservado", "src/ingesta.py, src/particion.py, src/eda.py", "Parcial"]
+  - ["Piloto (4.6.7)", "κ de Fleiss y repetibilidad del panel, MAE, viabilidad de captura; congelamiento de umbrales", "src/panel.py, src/piloto.py", "Pendiente"]
+  - ["H1 / OE1", "d_est, MAE/RMSE con IC bootstrap, exactitud adyacente, Bland–Altman y error en 34,5–42 mm", "src/atributos.py, src/calibracion.py, src/contrastes.py", "Parcial"]
+  - ["H2 / OE2 (E1)", "1 vista (0°) frente a 5 vistas: recall de Fábrica, McNemar exacto y bootstrap pareado", "src/experimentos.py (e1_multivista), src/inferir_hibrido.py", "Pendiente"]
+  - ["H3 / OE3 (E2)", "Híbrido (YOLOv8-seg + atributos + regla) frente a ResNet-50 de 5 vistas", "src/segmentacion.py, src/inferir_hibrido.py, src/entrenar_directo.py, src/contrastes.py", "Pendiente"]
+  - ["H4 / OE4", "Sistema frente a operarios: κ_sis − κ_op, no inferioridad con δ = 0,05", "src/operarios.py, src/estadistica.py, src/contrastes.py", "Pendiente"]
+  - ["Ablaciones exploratorias (E3, E4, E5)", "Preprocesamiento, balanceo y perturbaciones de luminancia, solo con validación", "src/preprocesamiento.py, src/entrenar_directo.py, src/experimentos.py", "Pendiente"]
+  - ["Hipótesis general", "F1 macro ≥ 0,85 (límite inferior del IC95 %, bootstrap estratificado B = 5 000) sobre la prueba congelada", "src/contrastes.py (contraste_general), src/protocolo.py", "Pendiente"]
+  - ["Potencia estadística (Anexo 2)", "Simulación Monte Carlo reproducible con semillas fijas", "src/potencia.py", "Parcial"]

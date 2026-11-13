@@ -1,0 +1,102 @@
+# =====================================================================================================================
+# Parámetros CENTRALES del proyecto, alineados con el Plan de tesis v4 (Plan_de_Tesis_Limon_UNI_v4_corregido).
+# Es la fuente única de: categorías, intervalos de calibre, cuotas, partición, umbrales de la regla comercial,
+# estadística confirmatoria (B, δ, α) y presupuesto de búsqueda. `src/config.py` lo lee; el resto del código no
+# repite estos números. Lo marcado `provisional: true` se fija con el panel en la PRUEBA PILOTO (sección 4.6.7) y
+# NO debe modificarse después de iniciada la recolección definitiva (sección 4.5).
+# =====================================================================================================================
+categorias: [Extra, Primera, Segunda, Tercera, Fabrica]        # orden del plan (Tabla 4.1)
+categorias_calibre: [Tercera, Segunda, Primera, Extra]         # orden ascendente por calibre (k = 1..4), para la categoría adyacente
+
+# ---- Intervalos continuos semiabiertos (sección 4.6.2; "propuesta a validar" con el panel y el centro de acopio)
+calibre_mm:
+  tercera_max: 35.0        # d < 35,0           -> Tercera
+  segunda_max: 37.0        # 35,0 <= d < 37,0   -> Segunda
+  primera_max: 39.0        # 37,0 <= d < 39,0   -> Primera
+  extra_max: 42.0          # 39,0 <= d <= 42,0  -> Extra   (límite por confirmar con el centro de acopio)
+                           # d > 42,0           -> fuera de alcance (se registra y se excluye)
+calibres_criticos_mm: [34.5, 35.0, 36.0, 37.0, 38.0, 39.0, 42.0]
+tolerancia_critica_mm: 0.5
+
+# ---- Cuotas de frutos VÁLIDOS y asignación muestral (Tabla 4.1): 880 / 220 / 400 (≈ 59 / 15 / 27 %)
+cuotas:
+  Extra:    {validos: 320, train: 192, val: 48, test: 80}
+  Primera:  {validos: 320, train: 192, val: 48, test: 80}
+  Segunda:  {validos: 320, train: 192, val: 48, test: 80}
+  Tercera:  {validos: 270, train: 152, val: 38, test: 80}
+  Fabrica:  {validos: 270, train: 152, val: 38, test: 80}
+diversificacion:
+  min_lotes: 3
+  min_fechas: 4
+  intervalo_min_dias: 15
+  max_pct_por_lote_o_fecha: 35        # ningún lote o fecha aporta más del 35 % de los frutos de una categoría
+semilla_particion: 42
+piloto_frutos: 100                    # los frutos del piloto NO entran en la muestra definitiva
+
+# ---- Operacionalización de defecto y color (Tabla 4.2). TODO provisional hasta el piloto.
+rubrica:
+  provisional: true
+  puntos_corte_area: [0.02, 0.05, 0.15]     # a1 < a2 < a3: fracción del área visible del fruto (unión de máscaras, sin doble conteo)
+  nivel_minimo_por_tipo:                    # "un tipo grave eleva la severidad aunque su área sea pequeña"
+    mancha: 1
+    rayadura: 1
+    cicatriz: 1
+    moho: 3
+    dano_mecanico: 3
+    deformacion: 1
+  theta_def: 2                              # defecto relevante si S >= theta_def (valor inicial de trabajo: S >= 2)
+  h_am: 103.0                               # matiz CIELAB h*_ab (grados) a partir del cual un píxel sano es "amarillo"  (h <= h_am)
+  p_am: 0.30                                # sobremaduración si la proporción de superficie sana amarilla P_am >= p_am
+  nota_p_am: "se contrasta con la tolerancia del 30 % que menciona la nota sobre la NTP 011.006"
+  # equivalencia de la escala histórica 0-1 de etiquetas.csv (severidad_defecto_panel) a niveles 0-3
+  severidad_panel_a_nivel: {0.0: 0, 0.25: 1, 0.5: 2, 0.75: 3, 1.0: 3}
+
+# ---- Estadística confirmatoria (sección 3.3 y 4.7.4)
+estadistica:
+  alfa: 0.05
+  bootstrap_B: 5000                  # bootstrap estratificado por categoría (v3 usaba 1 000)
+  semilla: 20261112
+  delta_kappa: 0.05                  # margen de no inferioridad de H4
+  hg_f1_macro_min: 0.85              # límite inferior del IC 95 % de F1 macro >= 0,85
+  h1: {mae_max: 0.50, rmse_max: 0.70, adyacente_min: 0.98}
+  h2: {incremento_pp_min: 15.0}
+  h3: {diferencia_relevante: 0.05}
+  panel: {kappa_fleiss_min: 0.75, repetibilidad_min: 0.80}
+  segmentacion: {iou_anotadores_min: 0.70}
+  latencia_ms_max: 200.0
+  umbral_categorias_lote_reservado: 20      # análisis por lote: categorías con >= 20 frutos (valor referencial)
+
+# ---- Submuestra de máscaras de defecto (sección 4.6.2): 500 frutos = 400 de desarrollo (80 por categoría) + 100 de prueba (20 por categoría)
+anotacion:
+  defectos_desarrollo_por_categoria: 80
+  defectos_prueba_por_categoria: 20
+  control_calidad_fraccion: 0.10     # segunda anotación independiente del 10 % de los frutos anotados
+  revision_agronomo_mascaras: 25
+  contornos_min_por_imagen_s: 30     # ≈ 0,5 min por imagen con preanotación
+  mascaras_defecto_min_por_fruto: 5
+
+# ---- Presupuesto de búsqueda y comparación justa H3 (sección 4.7.1)
+busqueda:
+  semillas_entrenamiento: [11, 23, 37]
+  semilla_busqueda: 101              # muestreo de hiperparámetros (YOLO, Mask R-CNN y clasificador directo); igual en todas las variantes
+  configs_modelo_principal: 8        # YOLOv8-seg (búsqueda aleatoria)
+  configs_candidato_alternativo: 3   # Mask R-CNN, 1 semilla
+  configs_clasificador_directo: 8    # ResNet-50 de 5 vistas
+  margen_mae_seleccion_mm: 0.05      # a igualdad práctica (dif. de MAE < 0,05 mm) se elige el de menor costo
+
+# ---- Modelos de aprendizaje profundo
+segmentacion:
+  principal: yolov8_seg
+  alternativo: mask_rcnn_resnet50
+  yolo_pesos: yolov8n-seg.pt         # cambiar por yolov8s-seg.pt / yolov8m-seg.pt si hay GPU suficiente
+  clases_fruto: [fruto]
+  clases_defecto: [mancha, rayadura, cicatriz, moho, dano_mecanico, deformacion]
+  imgsz: 640
+directo:
+  backbone: resnet50
+  vistas: 5
+  agregacion_logits: mean            # promedio de los logits de las 5 vistas (sección 4.7.1)
+  optimizador: adamw
+  scheduler: cosine
+  early_stopping: {monitor: val_loss, paciencia: 5}
+  imgsz: 224

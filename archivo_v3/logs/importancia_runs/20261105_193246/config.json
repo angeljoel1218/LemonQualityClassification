@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "run_id": "20261105_193246",
+    "python": "3.12.3",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "huella_particion": "225c47198258",
+    "config_hash": "a715ff609b36",
+    "n_splits": 5,
+    "n_train": 359
+  },
+  "cfg": {
+    "modelos": [
+      "rf",
+      "logreg"
+    ],
+    "conjunto": "A+C",
+    "n_repeats": 5,
+    "top_k": 10,
+    "ruido_control": true
+  }
+}

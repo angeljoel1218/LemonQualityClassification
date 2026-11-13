@@ -120,3 +120,15 @@ Sin este archivo, las features en milímetros (calibre) no se pueden calcular.
 - `fecha` como **texto**, porque Excel suele convertir `20260915` en número o fecha.
 - Categorías escritas exactamente como en §2 (se normalizan tildes y mayúsculas, no erratas).
 - `id_fruto` idéntico al del nombre de las imágenes.
+
+---
+
+## 6. Actualización al Plan de tesis v4
+
+**Nuevas columnas opcionales de `etiquetas.csv`:** `severidad_nivel_panel` (ordinal 0–3, Tabla 4.2; si falta se deriva de `severidad_defecto_panel` con `configs/proyecto.yaml: rubrica.severidad_panel_a_nivel`), `piloto` (1 = fruto de la prueba piloto, fuera de la muestra definitiva).
+
+**`panel_evaluaciones.csv`** (una fila por fruto × evaluador × ronda): `id_fruto, evaluador, ronda, color, severidad_nivel | severidad_defecto, tipo_defecto, [categoria], [rol]`. Ronda 1 = evaluación principal de los tres agrónomos; ronda 2 = repetición ciega de 50 frutos (≥ 1 semana después); `rol = adjudicador` identifica al cuarto evaluador que dirime si no hay mayoría.
+
+**`operarios_clasificaciones.csv`:** `id_fruto, operario, ronda, categoria, tiempo_s` (≥ 3 operarios sobre los 400 frutos de prueba; ronda 2 = 50 frutos).
+
+**Categoría de referencia (v4):** Fábrica si el panel determina severidad S ≥ θ_def en alguna vista o sobremadurez (P_am ≥ p_am); si no, por calibre medido con los intervalos semiabiertos Tercera < 35,0; Segunda 35,0–37,0; Primera 37,0–39,0; Extra 39,0–42,0 mm. Frutos > 42,0 mm: se registran y se excluyen.

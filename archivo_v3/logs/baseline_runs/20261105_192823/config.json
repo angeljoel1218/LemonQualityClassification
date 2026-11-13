@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "run_id": "20261105_192823",
+    "python": "3.12.3",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "huella_particion": "225c47198258",
+    "config_hash": "2798c62b118e",
+    "n_splits": 5,
+    "n_train": 359,
+    "n_val": 76,
+    "n_test": 76
+  },
+  "cfg": {
+    "semillas": [
+      0,
+      1,
+      2
+    ],
+    "cv_folds": 5,
+    "positivo": "Fabrica",
+    "metrica_central": "f1_macro",
+    "modelos": [
+      "dummy",
+      "knn",
+      "gnb"
+    ],
+    "knn_k": 5,
+    "conjunto_features": "A",
+    "variantes": {
+      "vistas": {
+        "1vista": [
+          "0"
+        ],
+        "2vistas": [
+          "0",
+          "180"
+        ],
+        "4ecuatoriales": [
+          "0",
+          "90",
+          "180",
+          "270"
+        ]
+      },
+      "remuestreo": [
+        "sobre",
+        "sub"
+      ]
+    },
+    "alfa": 0.05
+  }
+}

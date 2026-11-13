@@ -12,12 +12,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.regla_comercial import CALIBRE_EXTRA, CALIBRE_PRIMERA, CALIBRE_SEGUNDA
+from src import config as _C
+from src.regla_comercial import CALIBRE_EXTRA, CALIBRE_PRIMERA, CALIBRE_SEGUNDA, FUERA
 
 ROOT = Path(__file__).resolve().parents[1]
-CATEGORIAS = ["Extra", "Primera", "Segunda", "Tercera", "Fabrica"]
-CUOTAS_MIN = {"Extra": 250, "Primera": 250, "Segunda": 250, "Tercera": 200, "Fabrica": 200}
-MIN_LOTES, MIN_FECHAS = 3, 4
+CATEGORIAS = list(_C.CATEGORIAS)
+CUOTAS_MIN = dict(_C.CUOTAS_VALIDAS)          # Tabla 4.1 del plan v4: 320 / 320 / 320 / 270 / 270 frutos VALIDOS (1 500)
+MIN_LOTES, MIN_FECHAS = int(_C.CFG["diversificacion"]["min_lotes"]), int(_C.CFG["diversificacion"]["min_fechas"])
+MAX_PCT_SESION = float(_C.CFG["diversificacion"]["max_pct_por_lote_o_fecha"])   # ningun lote o fecha > 35 % de una categoria
+# Calibres en los que la tesis pide reportar el error de medicion (secciones 3.1.3 y 4.6.3; hipotesis H1)
+CALIBRES_CRITICOS = list(_C.CFG["calibres_criticos_mm"])
+# Tabla 1.1 TAL COMO ESTA ESCRITA en la tesis (intervalos cerrados, en mm). Dejan huecos y no tienen techo.
+TABLA_1_1 = {"Extra": (39.0, 42.0), "Primera": (37.0, 38.0), "Segunda": (35.0, 36.0)}   # Tercera: < 35
 
 
 # ----------------------------------------------------------------- calidad de etiquetas
@@ -83,6 +89,8 @@ def asociacion_categoria_metadato(df: pd.DataFrame, col: str) -> float:
 
 # ----------------------------------------------------------------- calibre vs categoría
 def categoria_por_calibre(calibre_mm: float) -> str:
+    if calibre_mm > _C.CALIBRE_MAXIMO:
+        return FUERA
     if calibre_mm >= CALIBRE_EXTRA:
         return "Extra"
     if calibre_mm >= CALIBRE_PRIMERA:
@@ -110,6 +118,59 @@ def fronterizos(df: pd.DataFrame, margen_mm: float = 0.5) -> pd.DataFrame:
     d = df.dropna(subset=["calibre_mm_ref"]).copy()
     d["dist_umbral"] = d["calibre_mm_ref"].apply(lambda c: np.abs(umbrales - c).min())
     return d[d["dist_umbral"] <= margen_mm]
+
+
+def frutos_cerca_de_criticos(df: pd.DataFrame, tol_mm: float = 0.5, criticos=CALIBRES_CRITICOS) -> pd.DataFrame:
+    """Cuantos frutos hay a <= tol_mm de cada calibre critico de la tesis (34,5; 35; 36; 37; 38; 39 y 42 mm).
+    Un fruto puede contar para dos criticos vecinos (p. ej. 36 y 37 con tol = 0,5 no se solapan, pero 34,5 y 35 si)."""
+    mm = df["calibre_mm_ref"].dropna()
+    return pd.DataFrame({"calibre_critico_mm": criticos,
+                         "frutos": [int(((mm - c).abs() <= tol_mm).sum()) for c in criticos]}).assign(
+        pct=lambda d: (100 * d["frutos"] / max(len(mm), 1)).round(1))
+
+
+def cobertura_tabla_1_1(df: pd.DataFrame) -> dict:
+    """Frutos cuyo calibre medido cae FUERA de los intervalos literales de la Tabla 1.1 (huecos entre categorias o
+    por encima de 42 mm). La tesis lo advierte en la nota de la Tabla 1.1 y propone cortes continuos (seccion 4.5.2)."""
+    mm = df["calibre_mm_ref"].dropna()
+    dentro = pd.Series(False, index=mm.index)
+    for lo, hi in TABLA_1_1.values():
+        dentro |= (mm >= lo) & (mm <= hi)
+    dentro |= mm < 35.0                                  # Tercera
+    huecos = mm[~dentro]
+    return dict(n=len(mm), sin_categoria=int((~dentro).sum()), en_huecos=int(((huecos > 36) & (huecos < 37)).sum() + ((huecos > 38) & (huecos < 39)).sum()),
+                sobre_42=int((huecos > 42).sum()), valores=sorted(huecos.round(1).unique().tolist())[:12])
+
+
+def concentracion_por_sesion(df: pd.DataFrame) -> pd.DataFrame:
+    """Para cada categoria: que parte de sus frutos viene de UN solo lote, de UNA sola fecha y de UNA sola sesion
+    (lote x fecha). El plan v4 (4.4) exige que ningun lote ni fecha aporte mas del 35 % de los frutos de una categoria.
+    Si una categoria sale de una sola sesion, el modelo puede aprender la sesion (iluminacion, escala) en vez del fruto."""
+    d = df.copy()
+    d["cat"] = normalizar_categorias(d["categoria_ref"])
+    d["sesion"] = d["lote"].astype(str) + "|" + d["fecha"].astype(str)
+    filas = []
+    for c in CATEGORIAS:
+        g = d[d["cat"] == c]
+        if g.empty:
+            continue
+        sh = lambda col: g[col].value_counts(normalize=True)
+        filas.append(dict(categoria=c, frutos=len(g), lote_dominante=sh("lote").index[0], pct_lote=100 * sh("lote").iloc[0],
+                          fecha_dominante=sh("fecha").index[0], pct_fecha=100 * sh("fecha").iloc[0],
+                          sesion_dominante=sh("sesion").index[0], pct_sesion=100 * sh("sesion").iloc[0]))
+    t = pd.DataFrame(filas)
+    t["cumple_4_3"] = (t["pct_lote"] <= MAX_PCT_SESION) & (t["pct_fecha"] <= MAX_PCT_SESION)
+    return t
+
+
+def campos_requeridos_por_tesis(df: pd.DataFrame) -> pd.DataFrame:
+    """Que campos que la tesis pide registrar por fruto (secciones 3.3.3, 4.3 y 4.5.4) existen en los datos."""
+    req = [("id_fruto", "unidad de analisis", "4.3"), ("lote", "lote de cosecha", "4.3"), ("fecha", "fecha de captura", "4.3"),
+           ("calibre_mm_ref", "calibre medido con vernier", "4.5.2"), ("categoria_ref", "categoria de referencia", "4.5.2"),
+           ("color_panel", "color segun el panel", "4.5.2"), ("severidad_defecto_panel", "severidad segun el panel", "4.5.2"),
+           ("fecha_cosecha", "fecha de cosecha", "4.3"), ("horas_cosecha_captura", "tiempo entre cosecha y captura (variable interviniente)", "3.3.3"),
+           ("productor", "productor o centro de procedencia", "4.3"), ("tipo_defecto", "tipo de defecto (sensibilidad por tipo, H2 secundaria)", "4.6.2")]
+    return pd.DataFrame([dict(campo=c, descripcion=d, seccion=s, presente=c in df.columns and df[c].notna().any()) for c, d, s in req])
 
 
 # ----------------------------------------------------------------- calidad de imagen

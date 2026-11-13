@@ -19,3 +19,10 @@ __pycache__/
 
 # Datos sintéticos de prueba
 data/demo/
+
+# Informe de datos sintéticos
+informe_demo/
+
+# v4
+data/yolo/
+data/anotaciones/**/*.jpg

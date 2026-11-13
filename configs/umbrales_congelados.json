@@ -1,0 +1,21 @@
+{
+  "theta_def": 2,
+  "h_am": 103.0,
+  "p_am": 0.3,
+  "puntos_corte_area": [
+    0.02,
+    0.05,
+    0.15
+  ],
+  "nivel_minimo_por_tipo": {
+    "mancha": 1,
+    "rayadura": 1,
+    "cicatriz": 1,
+    "moho": 3,
+    "dano_mecanico": 3,
+    "deformacion": 1
+  },
+  "origen": "piloto",
+  "fecha": "2026-11-12T20:50:16",
+  "huella": "e7547843eb6b"
+}

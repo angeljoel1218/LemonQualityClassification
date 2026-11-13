@@ -34,9 +34,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:      # permite `python src/extraer_features.py`
     sys.path.insert(0, str(ROOT))
 
+from src import atributos as at  # noqa: E402
+from src import preprocesamiento as pp  # noqa: E402
+from src import regla_comercial as rc  # noqa: E402
 from src.features_imagen import PARAMS, features_vista  # noqa: E402
-from src.ingesta import leer_etiquetas
-
+from src.ingesta import leer_csv  # noqa: E402
 EQ = {"0", "90", "180", "270"}
 
 
@@ -50,28 +52,32 @@ def cargar_calibracion(raw: Path) -> dict:
     if not ruta.exists():
         print(f"[AVISO] No existe {ruta}: las features en mm quedarán vacías (solo px).")
         return {}
-    c = leer_etiquetas(ruta, numericas=["mm_por_px"])
+    c = leer_csv(ruta, numericas=["mm_por_px"])
     return {(str(r.lote), str(r.fecha)): r.mm_por_px for r in c.itertuples()}
 
 
-def _procesar(fila: dict, mm_por_px, params: dict) -> dict:
+def _procesar(fila: dict, mm_por_px, params: dict, preproc: str = "ninguno", h_am=None, sesiones=None, camara=None) -> dict:
     ruta = Path(fila["ruta"])
     ruta = ruta if ruta.is_absolute() else ROOT / ruta
     img = cv2.imread(str(ruta))
     base = {k: fila[k] for k in ("id_fruto", "lote", "fecha", "vista")}
     if img is None:
         return {**base, "seg_ok": False, "legible": False}
-    return {**base, "legible": True, **features_vista(img, mm_por_px=mm_por_px, p=params)}
+    if preproc != "ninguno" or camara is not None:
+        img = pp.aplicar(img, preproc, (fila["lote"], fila["fecha"]), sesiones, camara)
+    return {**base, "legible": True, **features_vista(img, mm_por_px=mm_por_px, p=params, h_am=h_am)}
 
 
-def extraer_vistas(df_img: pd.DataFrame, calib: dict, params: dict, n_jobs: int = 1) -> pd.DataFrame:
+def extraer_vistas(df_img: pd.DataFrame, calib: dict, params: dict, n_jobs: int = 1, preproc: str = "ninguno",
+                   h_am=None) -> pd.DataFrame:
     filas = df_img.to_dict("records")
     mm = [calib.get((str(f["lote"]), str(f["fecha"]))) for f in filas]
+    sesiones, camara = pp.cargar_sesiones(), pp.cargar_camara()
     if n_jobs == 1:
-        res = [_procesar(f, m, params) for f, m in zip(filas, mm)]
+        res = [_procesar(f, m, params, preproc, h_am, sesiones, camara) for f, m in zip(filas, mm)]
     else:
         from joblib import Parallel, delayed
-        res = Parallel(n_jobs=n_jobs)(delayed(_procesar)(f, m, params) for f, m in zip(filas, mm))
+        res = Parallel(n_jobs=n_jobs)(delayed(_procesar)(f, m, params, preproc, h_am, sesiones, camara) for f, m in zip(filas, mm))
     return pd.DataFrame(res)
 
 
@@ -81,15 +87,19 @@ def _cv(x):
     return float(x.std(ddof=0) / x.mean()) if len(x) > 1 and x.mean() != 0 else np.nan
 
 
-def agregar_fruto(g: pd.DataFrame, umbral_vista_defecto: float) -> pd.Series:
+def agregar_fruto(g: pd.DataFrame, umbral_vista_defecto: float, u: "rc.UmbralesRegla | None" = None) -> pd.Series:
+    u = u or rc.UmbralesRegla()
     ok = g[g["seg_ok"].fillna(False).astype(bool)]
     eq = ok[ok["vista"].isin(EQ)]
     ped = ok[ok["vista"] == "pedunculo"]
     r = {}
     mm = lambda s: s.median() if s.notna().any() else np.nan
-    # --- geometría (calibre = mediana de las vistas ecuatoriales)
-    r["diam_ecu_px"] = eq["eje_menor_px"].median()
-    r["diam_ecu_mm"] = mm(eq["eje_menor_mm"]) if "eje_menor_mm" in eq else np.nan
+    # --- atributos del Plan v4 (Tabla 3.3 / 4.2): d_est = max(media 0/180, media 90/270), severidad S, P_am
+    a4 = at.agregar_atributos_fruto(g, u)
+    r.update({k: a4[k] for k in ("d_est_px", "d_est_mm", "d_med4_px", "d_med4_mm", "severidad_max", "A_def_max", "p_amarillo")})
+    # --- geometría: `diam_ecu_*` = calibre estimado d_est (ancho perpendicular al eje longitudinal; antes: mediana del eje menor)
+    r["diam_ecu_px"] = r["d_est_px"] if np.isfinite(r["d_est_px"]) else eq["eje_menor_px"].median()
+    r["diam_ecu_mm"] = r["d_est_mm"]
     r["long_polar_px"] = eq["eje_mayor_px"].median()
     r["long_polar_mm"] = mm(eq["eje_mayor_mm"]) if "eje_mayor_mm" in eq else np.nan
     r["aspecto"] = eq["aspecto"].median()
@@ -123,24 +133,29 @@ def agregar_fruto(g: pd.DataFrame, umbral_vista_defecto: float) -> pd.Series:
     return pd.Series(r)
 
 
-def agregar_por_fruto(vistas: pd.DataFrame, umbral_vista_defecto: float = 0.02) -> pd.DataFrame:
+def agregar_por_fruto(vistas: pd.DataFrame, umbral_vista_defecto: float = 0.02, u=None) -> pd.DataFrame:
     meta = vistas.groupby("id_fruto")[["lote", "fecha"]].first()
-    agg = vistas.groupby("id_fruto").apply(agregar_fruto, umbral_vista_defecto=umbral_vista_defecto,
+    agg = vistas.groupby("id_fruto").apply(agregar_fruto, umbral_vista_defecto=umbral_vista_defecto, u=u,
                                            include_groups=False)
     return meta.join(agg).reset_index()
 
 
-def main(raw: Path, procesados: Path, n_jobs: int):
+def sufijo(preproc: str) -> str:
+    return "" if preproc in (None, "", "ninguno") else f"_{preproc}"
+
+
+def main(raw: Path, procesados: Path, n_jobs: int, preproc: str = "ninguno"):
     cfg = cargar_cfg()
     params = {**PARAMS, **cfg.get("extraccion", {})}
+    u = rc.cargar_umbrales()
     df_img = pd.read_csv(procesados / "indice_imagenes.csv", dtype=str)
     t0 = time.perf_counter()
-    vistas = extraer_vistas(df_img, cargar_calibracion(raw), params, n_jobs)
-    vistas.to_csv(procesados / "features_vistas.csv", index=False)
-    frutos = agregar_por_fruto(vistas, cfg["dominio"].get("umbral_vista_defecto", 0.02))
-    frutos.to_csv(procesados / "features_frutos.csv", index=False)
+    vistas = extraer_vistas(df_img, cargar_calibracion(raw), params, n_jobs, preproc, u.h_am)
+    vistas.to_csv(procesados / f"features_vistas{sufijo(preproc)}.csv", index=False)
+    frutos = agregar_por_fruto(vistas, cfg["dominio"].get("umbral_vista_defecto", 0.02), u)
+    frutos.to_csv(procesados / f"features_frutos{sufijo(preproc)}.csv", index=False)
     mal = int((~vistas["seg_ok"].fillna(False).astype(bool)).sum())
-    print(f"Vistas procesadas: {len(vistas)} (segmentación fallida: {mal})")
+    print(f"Vistas procesadas: {len(vistas)} (segmentación fallida: {mal}) | preprocesamiento: {preproc}")
     print(f"Frutos: {len(frutos)} | tiempo total: {time.perf_counter()-t0:.1f} s")
     print(f"Guardado en {procesados}")
 
@@ -150,5 +165,7 @@ if __name__ == "__main__":
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "raw")
     ap.add_argument("--procesados", type=Path, default=ROOT / "data" / "processed")
     ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--preproc", choices=list(pp.VARIANTES), default="ninguno",
+                    help="variante de preprocesamiento (ablación E3): ninguno | brillo | brillo_color")
     a = ap.parse_args()
-    main(a.raw, a.procesados, a.jobs)
+    main(a.raw, a.procesados, a.jobs, a.preproc)

@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "run_id": "20261030_182852",
+    "python": "3.11.9",
+    "sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.4.6",
+    "huella_particion": "225c47198258",
+    "huella_firma_datos": "9acf55c24758",
+    "config_hash": "c68292e8562f",
+    "n_splits": 5
+  },
+  "cfg": {
+    "semillas": [
+      0,
+      1,
+      2
+    ],
+    "cv_folds": 5,
+    "modelos": [
+      "knn",
+      "logreg",
+      "rf"
+    ],
+    "conjuntos": [
+      "A",
+      "A+B",
+      "A+C",
+      "A+B+C",
+      "A+B+C+S"
+    ],
+    "positivo": "Fabrica",
+    "usar_calidad_como_feature": false,
+    "modelo_params": {
+      "knn_k": 5,
+      "rf_arboles": 300
+    },
+    "transformaciones": {
+      "winsor": [
+        5,
+        95
+      ],
+      "umbral_asimetria": 1.0,
+      "outlier_k": 1.5,
+      "outlier_tasa_min": 0.01,
+      "colinealidad_umbral": 0.95
+    },
+    "dominio": {
+      "umbrales_calibre_mm": [
+        35.0,
+        37.0,
+        39.0
+      ],
+      "fronterizo_mm": 0.5,
+      "hue_verde_min": 123.0,
+      "hue_amarillo_max": 103.0,
+      "theta_def": 0.1,
+      "umbral_vista_defecto": 0.02
+    },
+    "extraccion": {
+      "borde": 12,
+      "de_min": 8.0,
+      "min_frac_area": 0.01,
+      "erosion_frac": 0.04,
+      "defecto_k": 2.5,
+      "defecto_de_min": 12.0,
+      "defecto_min_frac": 0.002,
+      "claro_tol": 5.0
+    },
+    "importancia": {
+      "modelos": [
+        "rf",
+        "logreg"
+      ],
+      "conjunto": "A+C",
+      "n_repeats": 5,
+      "top_k": 10,
+      "ruido_control": true
+    }
+  }
+}
